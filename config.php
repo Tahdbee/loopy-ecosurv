@@ -19,6 +19,43 @@ function e(string $value): string
     return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
 }
 
+function upload_product_image(array $file, string $existing = ""): string
+{
+    if (($file["error"] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $existing;
+    }
+    if (($file["error"] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        throw new RuntimeException("Image upload failed.");
+    }
+    if (($file["size"] ?? 0) > 5 * 1024 * 1024) {
+        throw new RuntimeException("Each image must be 5 MB or smaller.");
+    }
+
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file["tmp_name"]);
+    $extensions = [
+        "image/jpeg" => "jpg",
+        "image/png" => "png",
+        "image/gif" => "gif",
+        "image/webp" => "webp",
+    ];
+    if (!isset($extensions[$mime])) {
+        throw new RuntimeException("Images must be JPG, PNG, GIF, or WEBP files.");
+    }
+
+    $directory = __DIR__ . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . "products";
+    if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
+        throw new RuntimeException("Could not create the image upload directory.");
+    }
+
+    $filename = bin2hex(random_bytes(16)) . "." . $extensions[$mime];
+    $destination = $directory . DIRECTORY_SEPARATOR . $filename;
+    if (!move_uploaded_file($file["tmp_name"], $destination)) {
+        throw new RuntimeException("Could not save the uploaded image.");
+    }
+
+    return "uploads/products/" . $filename;
+}
+
 function is_logged_in(): bool
 {
     return isset($_SESSION["user_id"]);
