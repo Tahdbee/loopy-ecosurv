@@ -41,30 +41,30 @@ function asset_url(string $path): string
         return $path;
     }
 
-    function csrf_token(): string
-    {
-        if (empty($_SESSION["csrf_token"])) {
-            $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
-        }
-
-        return $_SESSION["csrf_token"];
-    }
-
-    function verify_csrf_token(): void
-    {
-        $submitted = $_POST["csrf_token"] ?? "";
-        if (!is_string($submitted) || !hash_equals(csrf_token(), $submitted)) {
-            http_response_code(400);
-            exit("Invalid request token.");
-        }
-    }
-
-    function protected_media_url(string $path): string
-    {
-        return "private_media.php?path=" . rawurlencode($path);
-    }
-
     return "/" . ltrim($path, "/");
+}
+
+function csrf_token(): string
+{
+    if (empty($_SESSION["csrf_token"])) {
+        $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION["csrf_token"];
+}
+
+function verify_csrf_token(): void
+{
+    $submitted = $_POST["csrf_token"] ?? "";
+    if (!is_string($submitted) || !hash_equals(csrf_token(), $submitted)) {
+        http_response_code(400);
+        exit("Invalid request token.");
+    }
+}
+
+function protected_media_url(string $path): string
+{
+    return "private_media.php?path=" . rawurlencode($path);
 }
 
 function upload_product_image(array $file, string $existing = ""): string
