@@ -56,6 +56,121 @@ function upload_product_image(array $file, string $existing = ""): string
     return "uploads/products/" . $filename;
 }
 
+function upload_transaction_proof(array $file): string
+{
+    if (($file["error"] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        throw new RuntimeException("Choose an image to upload.");
+    }
+    if (($file["error"] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        throw new RuntimeException("Image upload failed.");
+    }
+    if (($file["size"] ?? 0) > 5 * 1024 * 1024) {
+        throw new RuntimeException("The proof image must be 5 MB or smaller.");
+    }
+
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file["tmp_name"]);
+    $extensions = [
+        "image/jpeg" => "jpg",
+        "image/png" => "png",
+        "image/webp" => "webp",
+    ];
+    if (!isset($extensions[$mime])) {
+        throw new RuntimeException("Proof images must be JPG, PNG, or WEBP files.");
+    }
+
+    $directory = __DIR__ . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . "payment-proofs";
+    if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
+        throw new RuntimeException("Could not create the payment proof directory.");
+    }
+
+    $filename = bin2hex(random_bytes(16)) . "." . $extensions[$mime];
+    $destination = $directory . DIRECTORY_SEPARATOR . $filename;
+    if (!move_uploaded_file($file["tmp_name"], $destination)) {
+        throw new RuntimeException("Could not save the payment proof image.");
+    }
+
+    return "uploads/payment-proofs/" . $filename;
+}
+
+function upload_seller_payment_qr(array $file, string $existing = ""): string
+{
+    if (($file["error"] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $existing;
+    }
+    if (($file["error"] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        throw new RuntimeException("QR image upload failed.");
+    }
+    if (($file["size"] ?? 0) > 5 * 1024 * 1024) {
+        throw new RuntimeException("The QR image must be 5 MB or smaller.");
+    }
+
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file["tmp_name"]);
+    $extensions = [
+        "image/jpeg" => "jpg",
+        "image/png" => "png",
+        "image/webp" => "webp",
+    ];
+    if (!isset($extensions[$mime])) {
+        throw new RuntimeException("The QR image must be JPG, PNG, or WEBP.");
+    }
+
+    $directory = __DIR__ . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . "seller-payment-qrs";
+    if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
+        throw new RuntimeException("Could not create the seller QR upload directory.");
+    }
+
+    $filename = bin2hex(random_bytes(16)) . "." . $extensions[$mime];
+    $destination = $directory . DIRECTORY_SEPARATOR . $filename;
+    if (!move_uploaded_file($file["tmp_name"], $destination)) {
+        throw new RuntimeException("Could not save the seller QR image.");
+    }
+
+    return "uploads/seller-payment-qrs/" . $filename;
+}
+
+function ensure_transaction_proof_columns(mysqli $conn): void
+{
+    $columns = [
+        "payment_flow" => "ENUM('legacy', 'cash_receipt', 'gopay_qr') NOT NULL DEFAULT 'legacy'",
+        "buyer_payment_proof" => "VARCHAR(255) NOT NULL DEFAULT ''",
+        "seller_cash_receipt" => "VARCHAR(255) NOT NULL DEFAULT ''",
+    ];
+
+    foreach ($columns as $column => $definition) {
+        $check = $conn->query("SHOW COLUMNS FROM transactions LIKE '" . $conn->real_escape_string($column) . "'");
+        if ($check->num_rows === 0) {
+            try {
+                $conn->query("ALTER TABLE transactions ADD COLUMN `$column` $definition");
+            } catch (mysqli_sql_exception $e) {
+                if ($e->getCode() !== 1060) {
+                    throw $e;
+                }
+            }
+        }
+    }
+}
+
+function ensure_seller_payment_columns(mysqli $conn): void
+{
+    $columns = [
+        "payment_instructions" => "VARCHAR(5000) NOT NULL DEFAULT ''",
+        "payment_qr_image" => "VARCHAR(255) NOT NULL DEFAULT ''",
+    ];
+
+    foreach ($columns as $column => $definition) {
+        $check = $conn->query("SHOW COLUMNS FROM users LIKE '" . $conn->real_escape_string($column) . "'");
+        if ($check->num_rows === 0) {
+            try {
+                $conn->query("ALTER TABLE users ADD COLUMN `$column` $definition");
+            } catch (mysqli_sql_exception $e) {
+                if ($e->getCode() !== 1060) {
+                    throw $e;
+                }
+            }
+        }
+    }
+}
+
 function is_logged_in(): bool
 {
     return isset($_SESSION["user_id"]);
@@ -110,6 +225,16 @@ function redirect_dashboard(string $role): void
         exit;
     }
     header("Location: dashboard_buyer.php");
+    exit;
+}
+
+function redirect_completion(string $step, int $itemId = 0): void
+{
+    $_SESSION["completion"] = [
+        "step" => $step,
+        "item_id" => max(0, $itemId),
+    ];
+    header("Location: completion.php");
     exit;
 }
 ?>

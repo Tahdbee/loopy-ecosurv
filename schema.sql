@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
     role ENUM('buyer', 'seller') NOT NULL DEFAULT 'buyer',
     faculty VARCHAR(120) DEFAULT '',
     major VARCHAR(120) DEFAULT '',
+    payment_instructions VARCHAR(5000) NOT NULL DEFAULT '',
+    payment_qr_image VARCHAR(255) NOT NULL DEFAULT '',
     is_verified TINYINT(1) NOT NULL DEFAULT 0,
     wallet_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -40,6 +42,9 @@ CREATE TABLE IF NOT EXISTS transactions (
     payment_type ENUM('online', 'cash') NOT NULL,
     payment_method VARCHAR(60) DEFAULT '',
     payment_status ENUM('Pending', 'Paid', 'Completed', 'Cancelled') NOT NULL DEFAULT 'Pending',
+    payment_flow ENUM('legacy', 'cash_receipt', 'gopay_qr') NOT NULL DEFAULT 'legacy',
+    buyer_payment_proof VARCHAR(255) NOT NULL DEFAULT '',
+    seller_cash_receipt VARCHAR(255) NOT NULL DEFAULT '',
     seller_accepted TINYINT(1) NOT NULL DEFAULT 0,
     buyer_completed TINYINT(1) NOT NULL DEFAULT 0,
     seller_completed TINYINT(1) NOT NULL DEFAULT 0,

@@ -1,0 +1,652 @@
+:root {
+    color-scheme: light;
+    --looply-orange: #FF5A1F;
+    --looply-midnight: #111318;
+    --looply-violet: #6957FF;
+    --looply-ice: #F6F7FB;
+    --looply-muted: #687080;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    color: var(--looply-midnight);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    overflow-x: hidden;
+}
+
+img {
+    max-width: 100%;
+}
+
+body.bg-slate-50,
+body.min-h-screen {
+    background-color: var(--looply-ice);
+    background-image:
+        radial-gradient(ellipse at 8% 8%, rgb(105 87 255 / 13%), transparent 34rem),
+        radial-gradient(ellipse at 92% 18%, rgb(255 90 31 / 10%), transparent 32rem),
+        linear-gradient(135deg, #F6F7FB 0%, #fff 48%, #F4F2FF 100%);
+    background-size: 160% 160%;
+    animation: looply-background-drift 24s ease-in-out infinite alternate;
+}
+
+@keyframes looply-background-drift {
+    from {
+        background-position: 0% 0%;
+    }
+    to {
+        background-position: 100% 100%;
+    }
+}
+
+.bg-white {
+    background-color: rgb(255 255 255 / 88%);
+    backdrop-filter: blur(14px);
+}
+
+.bg-blue-600 {
+    background-color: var(--looply-orange);
+    background-image: linear-gradient(110deg, #FF5A1F, #ff7545);
+}
+
+.favorite-button {
+    border: 1px solid #f6c6d8;
+    border-radius: 0.75rem;
+    background: #fff1f6;
+    color: #b83268;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+}
+
+.favorite-button:hover {
+    background: #ffe4ef;
+}
+
+.favorite-button.favorited,
+.favorite-button.favorited:disabled {
+    border-color: #f3c1d4;
+    background: #fce7ef;
+    color: #a52e5e;
+    box-shadow: none;
+    cursor: default;
+    opacity: 1;
+    transform: none;
+}
+
+.seller-stars {
+    color: var(--looply-orange);
+    letter-spacing: 0.08em;
+}
+
+.seller-stars span {
+    color: #d7dbe5;
+}
+
+.seller-rating-control {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 0.15rem;
+}
+
+.seller-rating-control input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+}
+
+.seller-rating-control label {
+    color: #d7dbe5;
+    cursor: pointer;
+    font-size: 2rem;
+    line-height: 1;
+    transition: color 160ms ease, transform 160ms ease;
+}
+
+.seller-rating-control input:checked ~ label,
+.seller-rating-control label:hover,
+.seller-rating-control label:hover ~ label {
+    color: var(--looply-orange);
+}
+
+.seller-rating-control input:focus-visible + label {
+    outline: 2px solid var(--looply-violet);
+    outline-offset: 3px;
+    border-radius: 0.2rem;
+}
+
+.completion-card {
+    animation: completion-card-enter 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.completion-check {
+    display: grid;
+    width: 5.25rem;
+    height: 5.25rem;
+    margin: 0 auto;
+    place-items: center;
+    border: 1px solid rgb(16 185 129 / 22%);
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ecfdf5, #d1fae5);
+    box-shadow: 0 12px 32px rgb(16 185 129 / 16%);
+    animation: completion-check-pop 620ms 120ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.completion-check svg {
+    width: 3.25rem;
+    height: 3.25rem;
+}
+
+.completion-check path {
+    fill: none;
+    stroke: #059669;
+    stroke-dasharray: 42;
+    stroke-dashoffset: 42;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 4;
+    animation: completion-check-draw 420ms 480ms ease-out forwards;
+}
+
+.completion-next {
+    animation: completion-next-enter 560ms 180ms ease-out both;
+}
+
+.completion-primary {
+    background: linear-gradient(110deg, var(--looply-orange), #ff7545);
+    box-shadow: 0 10px 24px rgb(255 90 31 / 22%);
+}
+
+.completion-primary:hover {
+    box-shadow: 0 14px 28px rgb(255 90 31 / 30%);
+}
+
+.payment-success-overlay {
+    position: fixed;
+    z-index: 100;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgb(17 19 24 / 58%);
+    backdrop-filter: blur(8px);
+    animation: completion-card-enter 220ms ease-out both;
+}
+
+.payment-success-card {
+    position: relative;
+    width: min(100%, 30rem);
+    padding: 2rem;
+    border: 1px solid rgb(255 255 255 / 70%);
+    border-radius: 1.75rem;
+    background: linear-gradient(145deg, #fff, #f8f7ff);
+    box-shadow: 0 28px 80px rgb(17 19 24 / 28%);
+    text-align: center;
+    animation: completion-check-pop 400ms ease-out both;
+}
+
+.payment-success-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.9rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 50%;
+    background: #f1f2f6;
+    color: #687080;
+    font-size: 1.5rem;
+    line-height: 1;
+    box-shadow: none;
+}
+
+tr[id^="transaction-"]:target {
+    scroll-margin-top: 7rem;
+    background: linear-gradient(90deg, rgb(255 90 31 / 12%), rgb(255 255 255 / 55%));
+    outline: 2px solid rgb(255 90 31 / 40%);
+    outline-offset: -2px;
+}
+
+@keyframes completion-card-enter {
+    from { opacity: 0; transform: translateY(18px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes completion-check-pop {
+    0% { opacity: 0; transform: scale(0.65) rotate(-12deg); }
+    70% { opacity: 1; transform: scale(1.08) rotate(3deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes completion-check-draw {
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes completion-next-enter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .completion-card,
+    .completion-check,
+    .completion-check path,
+    .completion-next,
+    .payment-success-overlay,
+    .payment-success-card {
+        animation: none;
+    }
+
+    .completion-check path {
+        stroke-dashoffset: 0;
+    }
+}
+
+.hover\:bg-blue-700:hover {
+    background-color: #e84912;
+    background-image: linear-gradient(110deg, #e84912, #f25c27);
+}
+
+.text-blue-700,
+.text-blue-600 {
+    color: var(--looply-violet);
+}
+
+.border-blue-200 {
+    border-color: rgb(105 87 255 / 25%);
+}
+
+a,
+button,
+input,
+select,
+textarea {
+    transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+a:hover,
+button:hover {
+    transform: translateY(-1px);
+}
+
+button,
+a.bg-blue-600 {
+    box-shadow: 0 8px 18px rgb(255 90 31 / 17%);
+}
+
+input,
+select,
+textarea {
+    border-color: #dfe2eb;
+    background-color: rgb(255 255 255 / 92%);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--looply-violet);
+    outline: 3px solid rgb(105 87 255 / 14%);
+}
+
+.looply-header {
+    position: sticky;
+    z-index: 20;
+    top: 0;
+    padding: 1.25rem 1rem 0;
+}
+
+.looply-nav-shell {
+    position: relative;
+    display: flex;
+    width: min(100%, 80rem);
+    min-height: 4.5rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgb(255 255 255 / 24%);
+    border-radius: 999px;
+    background: linear-gradient(110deg, rgb(17 19 24 / 86%), rgb(28 25 43 / 76%));
+    box-shadow:
+        0 18px 40px rgb(17 19 24 / 20%),
+        0 0 28px rgb(105 87 255 / 17%),
+        0 0 20px rgb(255 90 31 / 10%);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+
+.looply-nav-logo {
+    display: grid;
+    width: 3.5rem;
+    height: 3.5rem;
+    flex: 0 0 auto;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.looply-nav-logo img {
+    display: block;
+    width: 2.7rem;
+    height: 2.7rem;
+    object-fit: contain;
+}
+
+.looply-nav-links {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.25rem, 1.8vw, 1.5rem);
+}
+
+.looply-nav-link,
+.looply-mobile-menu-panel a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.65rem 0.95rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: rgb(255 255 255 / 82%);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.looply-nav-link:hover,
+.looply-nav-link.is-active,
+.looply-mobile-menu-panel a:hover,
+.looply-mobile-menu-panel a.is-active {
+    border-color: rgb(255 255 255 / 14%);
+    background:
+        radial-gradient(ellipse at 20% 0%, rgb(255 90 31 / 26%), transparent 75%),
+        rgb(255 255 255 / 8%);
+    color: #fff;
+    box-shadow:
+        0 0 18px rgb(255 90 31 / 26%),
+        inset 0 0 12px rgb(105 87 255 / 18%);
+    transform: none;
+}
+
+.looply-nav-link,
+.looply-nav-link:hover {
+    transition: color 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.looply-nav-account {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 1rem;
+}
+
+.looply-account-pill {
+    max-width: min(22vw, 18rem);
+    overflow: hidden;
+    padding: 0.75rem 1.15rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 50%);
+    background: rgb(246 247 251 / 94%);
+    color: var(--looply-midnight);
+    font-size: 0.9rem;
+    font-weight: 650;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.looply-logout-link {
+    color: rgb(255 255 255 / 75%);
+    font-size: 0.85rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.looply-logout-link:hover {
+    color: #ff8a5f;
+    text-shadow: 0 0 14px rgb(255 90 31 / 55%);
+    transform: none;
+}
+
+.looply-mobile-menu {
+    display: none;
+}
+
+.looply-mobile-menu summary {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-content: center;
+    justify-items: center;
+    gap: 0.28rem;
+    border: 1px solid rgb(255 255 255 / 25%);
+    border-radius: 50%;
+    cursor: pointer;
+    list-style: none;
+}
+
+.looply-mobile-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.looply-mobile-menu summary span {
+    width: 1.1rem;
+    height: 2px;
+    border-radius: 2px;
+    background: white;
+}
+
+.looply-mobile-menu-panel {
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    right: 0;
+    left: 0;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 1.25rem;
+    background: var(--looply-midnight);
+    box-shadow: 0 18px 40px rgb(17 19 24 / 20%);
+}
+
+.looply-mobile-menu-panel a {
+    padding: 0.8rem 1rem;
+    border-radius: 0.75rem;
+}
+
+.looply-mobile-menu-panel a:hover {
+    background: rgb(255 255 255 / 7%);
+}
+
+.looply-header + main > div:first-child > div.flex.gap-2 {
+    display: none;
+}
+
+.overflow-x-auto {
+    max-width: 100%;
+}
+
+table {
+    min-width: 36rem;
+}
+
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+    outline: 3px solid rgb(255 90 31 / 55%);
+    outline-offset: 3px;
+}
+
+main > div.bg-white,
+main > div.rounded-2xl {
+    border: 1px solid rgb(17 19 24 / 6%);
+}
+
+.brand-wordmark {
+    color: var(--looply-midnight);
+    font-weight: 850;
+    letter-spacing: -0.07em;
+}
+
+.brand-wordmark span {
+    color: var(--looply-orange);
+}
+
+.brand-logo-link {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.brand-logo-with-text {
+    display: block;
+    width: auto;
+    height: 3.5rem;
+    object-fit: contain;
+}
+
+.brand-logo-icon {
+    display: none;
+    width: 2.75rem;
+    height: 2.75rem;
+    object-fit: contain;
+}
+
+.brand-tagline {
+    color: var(--looply-muted);
+    letter-spacing: 0.02em;
+}
+
+.brand-footer {
+    width: 100%;
+    max-width: 80rem;
+    margin: 3rem auto 0;
+    padding: 1.5rem 1rem 2rem;
+    border-top: 1px solid rgb(17 19 24 / 9%);
+    color: var(--looply-muted);
+    font-size: 0.875rem;
+}
+
+.brand-footer a {
+    color: var(--looply-midnight);
+    font-weight: 700;
+}
+
+.product-card {
+    transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgb(17 19 24 / 10%);
+}
+
+@media (max-width: 900px) {
+    .looply-header {
+        padding: 0.75rem 0.75rem 0;
+    }
+
+    .looply-nav-shell {
+        min-height: 4rem;
+        gap: 0.75rem;
+        padding: 0.4rem 0.5rem;
+    }
+
+    .looply-nav-links {
+        gap: 0.15rem;
+    }
+
+    .looply-nav-link {
+        padding-right: 0.65rem;
+        padding-left: 0.65rem;
+        font-size: 0.88rem;
+    }
+
+    .looply-nav-logo {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    .looply-nav-logo img {
+        width: 2.35rem;
+        height: 2.35rem;
+    }
+
+    .looply-nav-account {
+        display: flex;
+        margin-left: auto;
+    }
+
+    .looply-account-pill {
+        max-width: min(38vw, 15rem);
+        padding: 0.65rem 0.85rem;
+        font-size: 0.8rem;
+    }
+
+    .looply-logout-link {
+        display: none;
+    }
+}
+
+@media (max-width: 700px) {
+    .looply-nav-links {
+        display: none;
+    }
+
+    .looply-mobile-menu {
+        display: block;
+        margin-left: 0;
+        flex: 0 0 auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .looply-header {
+        padding-right: 0.6rem;
+        padding-left: 0.6rem;
+    }
+
+    .looply-nav-shell {
+        border-radius: 1.5rem;
+    }
+
+    main {
+        padding-right: 0.9rem;
+        padding-left: 0.9rem;
+    }
+
+    table {
+        min-width: 34rem;
+    }
+
+    .brand-logo-with-text {
+        display: none;
+    }
+
+    .brand-logo-icon {
+        display: block;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
