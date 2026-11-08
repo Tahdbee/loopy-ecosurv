@@ -2239,6 +2239,576 @@ main aside.bg-white {
     }
 }
 
+.looply-account-menu {
+    position: relative;
+}
+
+.looply-account-menu > summary {
+    display: flex;
+    max-width: min(30vw, 18rem);
+    align-items: center;
+    gap: 0.55rem;
+    overflow: hidden;
+    padding: 0.42rem 0.75rem 0.42rem 0.45rem;
+    border: 1px solid rgb(255 255 255 / 54%);
+    border-radius: 999px;
+    background: rgb(246 247 251 / 95%);
+    box-shadow: 0 7px 20px rgb(10 10 20 / 13%);
+    color: var(--looply-midnight);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 700;
+    list-style: none;
+    transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.looply-account-menu > summary::-webkit-details-marker {
+    display: none;
+}
+
+.looply-account-menu > summary:hover,
+.looply-account-menu[open] > summary {
+    transform: translateY(-1px);
+    background: white;
+    box-shadow: 0 10px 24px rgb(10 10 20 / 18%);
+}
+
+.looply-account-menu > summary:focus-visible {
+    outline: 3px solid rgb(255 90 31 / 55%);
+    outline-offset: 3px;
+}
+
+.looply-account-avatar {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(140deg, var(--looply-violet), #9d8aff 54%, var(--looply-orange));
+    box-shadow: inset 0 0 0 2px rgb(255 255 255 / 35%);
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 850;
+}
+
+.looply-account-avatar img,
+.messages-avatar img,
+.chat-partner-avatar img,
+.chat-message-avatar img,
+.seller-profile-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+}
+
+.seller-hero-profile {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.seller-profile-avatar {
+    display: grid;
+    width: 6rem;
+    height: 6rem;
+    flex: 0 0 auto;
+    place-items: center;
+    overflow: hidden;
+    border: 3px solid rgb(255 255 255 / 90%);
+    border-radius: 1.8rem;
+    background: linear-gradient(140deg, var(--looply-violet), #9d8aff 54%, var(--looply-orange));
+    box-shadow: 0 12px 30px rgb(75 60 150 / 20%);
+    color: white;
+    font-size: 2rem;
+    font-weight: 850;
+}
+
+.looply-account-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.looply-account-chevron {
+    flex: 0 0 auto;
+    color: #777383;
+    font-size: 1rem;
+    transition: transform 180ms ease;
+}
+
+.looply-account-menu[open] .looply-account-chevron {
+    transform: rotate(180deg);
+}
+
+.looply-account-dropdown {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% + 0.65rem);
+    right: 0;
+    width: min(18rem, calc(100vw - 2rem));
+    overflow: hidden;
+    padding: 0.55rem;
+    border: 1px solid rgb(255 255 255 / 76%);
+    border-radius: 1.3rem;
+    background:
+        radial-gradient(ellipse at 12% 0%, rgb(255 255 255 / 98%), transparent 58%),
+        linear-gradient(145deg, rgb(255 255 255 / 94%), rgb(247 245 255 / 90%) 58%, rgb(255 248 244 / 94%));
+    box-shadow:
+        0 26px 65px rgb(18 16 31 / 24%),
+        0 8px 20px rgb(105 87 255 / 10%),
+        inset 0 1px 0 rgb(255 255 255 / 95%),
+        inset 0 -1px 0 rgb(105 87 255 / 7%);
+    backdrop-filter: blur(28px) saturate(165%);
+    -webkit-backdrop-filter: blur(28px) saturate(165%);
+    transform-origin: top right;
+    animation: looply-account-dropdown-in 180ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.looply-account-dropdown::before {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 5rem;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgb(255 255 255 / 62%), transparent);
+    content: "";
+    pointer-events: none;
+}
+
+.looply-account-menu-heading,
+.looply-account-dropdown > a,
+.looply-account-menu-divider {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes looply-account-dropdown-in {
+    from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.looply-account-menu-heading {
+    display: grid;
+    gap: 0.2rem;
+    margin-bottom: 0.35rem;
+    padding: 0.8rem 0.8rem 0.9rem;
+    border-bottom: 1px solid rgb(105 87 255 / 10%);
+}
+
+.looply-account-menu-heading strong {
+    overflow: hidden;
+    color: #272535;
+    font-size: 0.82rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.looply-account-menu-heading span {
+    overflow: hidden;
+    color: #858190;
+    font-size: 0.68rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.looply-account-dropdown > a {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.68rem 0.75rem;
+    border-radius: 0.75rem;
+    color: #4b4857;
+    font-size: 0.78rem;
+    font-weight: 650;
+    transition: color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.looply-account-dropdown > a > span:first-child {
+    display: grid;
+    width: 1.6rem;
+    height: 1.6rem;
+    place-items: center;
+    border-radius: 0.55rem;
+    background: #f1efff;
+    color: #6554df;
+    font-size: 0.9rem;
+}
+
+.looply-account-dropdown > a:hover {
+    transform: translateX(2px);
+    background: linear-gradient(105deg, rgb(105 87 255 / 10%), rgb(255 255 255 / 80%) 52%, rgb(255 90 31 / 8%));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 85%), 0 5px 14px rgb(55 44 92 / 7%);
+    color: #4d3bc7;
+}
+
+.looply-account-menu-divider {
+    height: 1px;
+    margin: 0.35rem 0.5rem;
+    background: linear-gradient(90deg, transparent, rgb(105 87 255 / 18%), rgb(255 90 31 / 14%), transparent);
+}
+
+.looply-account-dropdown > a.looply-account-logout {
+    color: #b4424a;
+}
+
+.looply-account-dropdown > a.looply-account-logout > span:first-child {
+    background: #fff0ef;
+    color: #c34850;
+}
+
+.profile-page-heading {
+    margin: 1.5rem 0 1rem;
+}
+
+.profile-page-heading h1 {
+    margin-top: 0.35rem;
+    color: var(--looply-midnight);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 900;
+    letter-spacing: -0.07em;
+}
+
+.profile-page-heading h1 span {
+    color: var(--looply-orange);
+}
+
+.profile-settings-card {
+    padding: clamp(1.1rem, 3vw, 1.65rem);
+    border: 1px solid rgb(255 255 255 / 88%);
+    border-radius: 1.35rem;
+    background: rgb(255 255 255 / 88%);
+    box-shadow: 0 16px 42px rgb(17 19 24 / 7%);
+    scroll-margin-top: 7rem;
+}
+
+.profile-settings-card-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.profile-settings-card-heading h2 {
+    margin-top: 0.15rem;
+    color: #272535;
+    font-size: 1.2rem;
+    font-weight: 850;
+    letter-spacing: -0.04em;
+}
+
+.profile-settings-card-heading > div:last-of-type > p:last-child {
+    margin-top: 0.2rem;
+    color: #817d8c;
+    font-size: 0.72rem;
+}
+
+.profile-settings-icon {
+    display: grid;
+    width: 2.8rem;
+    height: 2.8rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.95rem;
+    background: linear-gradient(140deg, #f0edff, #fff3ec);
+    color: #6654df;
+    font-size: 1.2rem;
+}
+
+.profile-settings-icon.settings-icon {
+    color: var(--looply-orange);
+}
+
+.profile-settings-icon.rating-icon {
+    color: #e8a325;
+}
+
+.profile-photo-editor {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+    padding: 1rem;
+    border: 1px solid rgb(105 87 255 / 9%);
+    border-radius: 1.1rem;
+    background: linear-gradient(115deg, #faf9ff, #fff8f4);
+}
+
+.profile-photo-preview {
+    display: grid;
+    width: 6rem;
+    height: 6rem;
+    flex: 0 0 auto;
+    place-items: center;
+    overflow: hidden;
+    border: 3px solid white;
+    border-radius: 1.6rem;
+    background: linear-gradient(140deg, var(--looply-violet), #9d8aff 54%, var(--looply-orange));
+    box-shadow: 0 9px 22px rgb(75 60 150 / 18%);
+    color: white;
+    font-size: 2rem;
+    font-weight: 850;
+    transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.profile-photo-preview:hover {
+    transform: translateY(-2px) rotate(-2deg);
+    box-shadow: 0 13px 28px rgb(75 60 150 / 24%);
+}
+
+.profile-photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: profile-photo-appear 260ms ease both;
+}
+
+@keyframes profile-photo-appear {
+    from { opacity: 0.45; transform: scale(1.05); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.profile-photo-controls {
+    display: grid;
+    min-width: 0;
+    gap: 0.35rem;
+}
+
+.profile-photo-controls > label {
+    color: #514e5d;
+    font-size: 0.75rem;
+    font-weight: 750;
+}
+
+.profile-photo-controls > p,
+.profile-photo-controls > small {
+    color: #858190;
+    font-size: 0.67rem;
+}
+
+.profile-photo-controls input[type="file"] {
+    max-width: 100%;
+    color: #615d6b;
+    font-size: 0.68rem;
+}
+
+.profile-photo-controls input[type="file"]::file-selector-button {
+    margin-right: 0.55rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid rgb(105 87 255 / 18%);
+    border-radius: 0.65rem;
+    background: white;
+    color: #594bc5;
+    cursor: pointer;
+    font-size: 0.67rem;
+    font-weight: 750;
+}
+
+.profile-remove-photo {
+    justify-self: start;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #b4424a;
+    cursor: pointer;
+    font-size: 0.67rem;
+    font-weight: 750;
+}
+
+.profile-remove-photo:hover {
+    color: #8e2834;
+    text-decoration: underline;
+}
+
+.profile-edit-form {
+    max-width: 39rem;
+    margin-top: 1.35rem;
+}
+
+.profile-edit-form > label,
+.profile-role-setting label {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: #514e5d;
+    font-size: 0.75rem;
+    font-weight: 750;
+}
+
+.profile-edit-form > input {
+    width: 100%;
+    min-height: 2.8rem;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid #e4e2eb;
+    border-radius: 0.8rem;
+    background: white;
+    color: #302d3b;
+    font-size: 0.82rem;
+}
+
+.profile-edit-form > input:focus {
+    border-color: var(--looply-violet);
+    outline: 3px solid rgb(105 87 255 / 12%);
+}
+
+.profile-readonly-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.85rem;
+}
+
+.profile-readonly-fields > div {
+    display: grid;
+    min-width: 0;
+    gap: 0.3rem;
+    padding: 0.75rem;
+    border: 1px solid rgb(17 19 24 / 5%);
+    border-radius: 0.8rem;
+    background: #faf9fc;
+}
+
+.profile-readonly-fields span {
+    color: #8b8794;
+    font-size: 0.64rem;
+}
+
+.profile-readonly-fields strong {
+    overflow: hidden;
+    color: #4c4958;
+    font-size: 0.72rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-verification {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.85rem;
+    color: #9c762b;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.profile-verification.is-verified {
+    color: #16835e;
+}
+
+.profile-save-button,
+.profile-outline-button {
+    display: inline-flex;
+    min-height: 2.55rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.6rem 0.9rem;
+    border: 0;
+    border-radius: 0.8rem;
+    background: linear-gradient(110deg, var(--looply-orange), #ff8050);
+    box-shadow: 0 8px 18px rgb(255 90 31 / 18%);
+    color: white;
+    cursor: pointer;
+    font-size: 0.74rem;
+    font-weight: 800;
+    transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.profile-save-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 11px 22px rgb(255 90 31 / 24%);
+}
+
+.profile-edit-form > .profile-save-button {
+    margin-top: 0.9rem;
+}
+
+.profile-account-settings {
+    margin-top: 1.2rem;
+}
+
+.profile-role-setting {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    padding: 0.9rem 0;
+    border-top: 1px solid rgb(17 19 24 / 7%);
+}
+
+.profile-role-setting > div {
+    flex: 1 1 13rem;
+}
+
+.profile-role-setting label {
+    margin: 0;
+}
+
+.profile-role-setting p {
+    margin-top: 0.25rem;
+    color: #858190;
+    font-size: 0.68rem;
+}
+
+.profile-role-setting select {
+    min-width: 8rem;
+    font-size: 0.75rem;
+}
+
+.profile-outline-button {
+    border: 1px solid rgb(105 87 255 / 20%);
+    background: #f3f1ff;
+    box-shadow: none;
+    color: #594bc5;
+}
+
+.profile-outline-button:hover {
+    background: #ebe8ff;
+    transform: translateY(-1px);
+}
+
+.profile-rating-value {
+    margin-left: auto;
+    color: var(--looply-orange);
+    font-size: 1.5rem;
+    font-weight: 900;
+}
+
+.profile-rating-value span {
+    color: #8b8794;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+@media (max-width: 900px) {
+    .looply-account-menu > summary {
+        max-width: min(38vw, 15rem);
+        padding: 0.35rem;
+    }
+
+    .looply-account-name {
+        display: none;
+    }
+
+    .looply-account-chevron {
+        display: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .looply-account-dropdown {
+        right: -3rem;
+    }
+
+    .profile-readonly-fields {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .looply-account-dropdown {
+        animation: none;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .landing-product-card,
     .landing-product-card:hover,

@@ -7,6 +7,7 @@ $stmt = $conn->prepare(
     "SELECT c.id, c.product_id, c.sender_id, c.receiver_id, c.message, c.created_at,
             p.name product_name,
             CASE WHEN c.sender_id = ? THEN receiver.full_name ELSE sender.full_name END partner_name,
+            CASE WHEN c.sender_id = ? THEN receiver.profile_image ELSE sender.profile_image END partner_photo,
             CASE WHEN c.sender_id = ? THEN c.receiver_id ELSE c.sender_id END partner_id
      FROM chats c
      JOIN products p ON p.id = c.product_id
@@ -27,7 +28,7 @@ $stmt = $conn->prepare(
        )
      ORDER BY c.created_at DESC, c.id DESC"
 );
-$stmt->bind_param("iiii", $user["id"], $user["id"], $user["id"], $user["id"]);
+$stmt->bind_param("iiiii", $user["id"], $user["id"], $user["id"], $user["id"], $user["id"]);
 $stmt->execute();
 $conversations = $stmt->get_result();
 $conversationRows = [];
@@ -71,7 +72,9 @@ $latestConversation = $conversationRows[0] ?? null;
             <?php else: ?>
                 <?php foreach ($conversationRows as $conversation): ?>
                     <a href="chat.php?product_id=<?= (int)$conversation["product_id"] ?>&partner_id=<?= (int)$conversation["partner_id"] ?>" class="messages-conversation">
-                        <span class="messages-avatar" aria-hidden="true"><?= e(strtoupper(substr($conversation["partner_name"], 0, 1))) ?></span>
+                        <span class="messages-avatar" aria-hidden="true">
+                            <?php if (!empty($conversation["partner_photo"])): ?><img src="<?= e($conversation["partner_photo"]) ?>" alt=""><?php else: ?><?= e(strtoupper(substr($conversation["partner_name"], 0, 1))) ?><?php endif; ?>
+                        </span>
                         <span class="messages-conversation-copy">
                             <span class="messages-conversation-topline">
                                 <strong><?= e($conversation["partner_name"]) ?></strong>

@@ -22,9 +22,39 @@ if ($user["role"] === "seller") {
                 <a href="<?= e($item["href"]) ?>" class="looply-nav-link <?= $item["active"] ? "is-active" : "" ?>" <?= $item["active"] ? 'aria-current="page"' : "" ?>><?= e($item["label"]) ?></a>
             <?php endforeach; ?>
         </div>
-        <div class="looply-nav-account" style="display:flex!important">
-            <a href="profile.php" class="looply-account-pill" style="max-width:min(38vw,15rem)" title="View your account"><?= e($user["full_name"] ?? "My account") ?></a>
-            <a href="logout.php" class="looply-logout-link">Log out</a>
+        <div class="looply-nav-account">
+            <details class="looply-account-menu">
+                <summary class="looply-account-pill" aria-label="Account menu for <?= e($user["full_name"] ?? "My account") ?>">
+                    <span class="looply-account-avatar" aria-hidden="true">
+                        <?php if (!empty($user["profile_image"])): ?>
+                            <img src="<?= e($user["profile_image"]) ?>" alt="">
+                        <?php else: ?>
+                            <?= e(strtoupper(substr($user["full_name"] ?? "M", 0, 1))) ?>
+                        <?php endif; ?>
+                    </span>
+                    <span class="looply-account-name"><?= e($user["full_name"] ?? "My account") ?></span>
+                    <span class="looply-account-chevron" aria-hidden="true">⌄</span>
+                </summary>
+                <div class="looply-account-dropdown">
+                    <div class="looply-account-menu-heading">
+                        <strong><?= e($user["full_name"] ?? "My account") ?></strong>
+                        <span><?= e($user["email"] ?? "") ?></span>
+                    </div>
+                    <a href="profile.php#profile">
+                        <span aria-hidden="true">♙</span>
+                        <span>Edit profile</span>
+                    </a>
+                    <a href="profile.php#settings">
+                        <span aria-hidden="true">⚙</span>
+                        <span>Settings</span>
+                    </a>
+                    <div class="looply-account-menu-divider"></div>
+                    <a href="logout.php" class="looply-account-logout">
+                        <span aria-hidden="true">↪</span>
+                        <span>Log out</span>
+                    </a>
+                </div>
+            </details>
         </div>
         <details class="looply-mobile-menu">
             <summary aria-label="Toggle navigation menu"><span></span><span></span><span></span></summary>
@@ -32,7 +62,8 @@ if ($user["role"] === "seller") {
                 <?php foreach ($navItems as $item): ?>
                     <a href="<?= e($item["href"]) ?>" class="<?= $item["active"] ? "is-active" : "" ?>"><?= e($item["label"]) ?></a>
                 <?php endforeach; ?>
-                <a href="profile.php">My profile · <?= e($user["full_name"] ?? "My account") ?></a>
+                <a href="profile.php#profile">Edit profile</a>
+                <a href="profile.php#settings">Settings</a>
                 <a href="logout.php">Log out</a>
             </div>
         </details>

@@ -40,31 +40,11 @@ if (isset($_GET["complete"])) {
     $check->bind_param("ii", $tid, $user["id"]);
     $check->execute();
     $tx = $check->get_result()->fetch_assoc();
-    if ($tx && (int)$tx["seller_completed"] === 1 && $tx["payment_status"] !== "Completed") {
-        if ($tx["payment_type"] === "online") {
-            $conn->begin_transaction();
-            try {
-                $upSeller = $conn->prepare("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?");
-                $upSeller->bind_param("di", $tx["amount"], $tx["seller_id"]);
-                $upSeller->execute();
-                $log = $conn->prepare("INSERT INTO wallet_transactions (user_id, transaction_id, type, amount, note) VALUES (?, ?, 'release_to_seller', ?, ?)");
-                $note = "Escrow released to seller";
-                $log->bind_param("iids", $tx["seller_id"], $tx["id"], $tx["amount"], $note);
-                $log->execute();
-                $done = $conn->prepare("UPDATE transactions SET payment_status = 'Completed' WHERE id = ?");
-                $done->bind_param("i", $tx["id"]);
-                $done->execute();
-                $conn->commit();
-            } catch (Throwable $e) {
-                $conn->rollback();
-                $message = "Could not complete the order: " . $e->getMessage();
-            }
-        } else {
-            $done = $conn->prepare("UPDATE transactions SET payment_status = 'Completed' WHERE id = ?");
-            $done->bind_param("i", $tx["id"]);
-            $done->execute();
-        }
-        if ($message === "") {
+    if ($tx && (int)$tx["seller_completed"] === 1 && !in_array($tx["payment_status"], ["Completed", "Cancelled"], true)) {
+        $done = $conn->prepare("UPDATE transactions SET payment_status = 'Completed' WHERE id = ? AND payment_status <> 'Cancelled'");
+        $done->bind_param("i", $tx["id"]);
+        $done->execute();
+        if ($done->affected_rows === 1) {
             $sold = $conn->prepare("UPDATE products SET is_sold = 1 WHERE id = ?");
             $sold->bind_param("i", $tx["product_id"]);
             $sold->execute();

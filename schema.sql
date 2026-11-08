@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS users (
     role ENUM('buyer', 'seller') NOT NULL DEFAULT 'buyer',
     faculty VARCHAR(120) DEFAULT '',
     major VARCHAR(120) DEFAULT '',
+    profile_image VARCHAR(255) NOT NULL DEFAULT '',
     payment_instructions VARCHAR(5000) NOT NULL DEFAULT '',
     payment_qr_image VARCHAR(255) NOT NULL DEFAULT '',
     is_verified TINYINT(1) NOT NULL DEFAULT 0,
-    wallet_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -53,18 +53,6 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     FOREIGN KEY (buyer_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS wallet_transactions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    transaction_id INT NULL,
-    type ENUM('topup_hold', 'release_to_seller', 'withdraw') NOT NULL,
-    amount DECIMAL(12,2) NOT NULL,
-    note VARCHAR(255) DEFAULT '',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS chats (

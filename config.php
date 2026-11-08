@@ -56,6 +56,63 @@ function upload_product_image(array $file, string $existing = ""): string
     return "uploads/products/" . $filename;
 }
 
+function upload_profile_photo(array $file): string
+{
+    if (($file["error"] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return "";
+    }
+    if (($file["error"] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        throw new RuntimeException("Profile photo upload failed.");
+    }
+    if (($file["size"] ?? 0) > 3 * 1024 * 1024) {
+        throw new RuntimeException("Your profile photo must be 3 MB or smaller.");
+    }
+
+    $temporaryPath = $file["tmp_name"] ?? "";
+    if (!is_uploaded_file($temporaryPath)) {
+        throw new RuntimeException("The selected profile photo is invalid.");
+    }
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($temporaryPath);
+    $extensions = [
+        "image/jpeg" => "jpg",
+        "image/png" => "png",
+        "image/webp" => "webp",
+    ];
+    if (!isset($extensions[$mime])) {
+        throw new RuntimeException("Profile photos must be JPG, PNG, or WEBP images.");
+    }
+
+    $directory = __DIR__ . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . "profile-photos";
+    if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
+        throw new RuntimeException("Could not create the profile photo directory.");
+    }
+
+    $filename = bin2hex(random_bytes(16)) . "." . $extensions[$mime];
+    if (!move_uploaded_file($temporaryPath, $directory . DIRECTORY_SEPARATOR . $filename)) {
+        throw new RuntimeException("Could not save your profile photo.");
+    }
+
+    return "uploads/profile-photos/" . $filename;
+}
+
+function delete_profile_photo(string $photoPath): void
+{
+    $prefix = "uploads/profile-photos/";
+    if (!str_starts_with($photoPath, $prefix)) {
+        return;
+    }
+
+    $filename = substr($photoPath, strlen($prefix));
+    if ($filename === "" || basename($filename) !== $filename) {
+        return;
+    }
+
+    $path = __DIR__ . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . "profile-photos" . DIRECTORY_SEPARATOR . $filename;
+    if (is_file($path) && !unlink($path)) {
+        throw new RuntimeException("Could not remove the previous profile photo.");
+    }
+}
+
 function upload_transaction_proof(array $file): string
 {
     if (($file["error"] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
@@ -171,6 +228,20 @@ function ensure_seller_payment_columns(mysqli $conn): void
     }
 }
 
+function ensure_user_profile_photo_column(mysqli $conn): void
+{
+    $check = $conn->query("SHOW COLUMNS FROM users LIKE 'profile_image'");
+    if ($check->num_rows === 0) {
+        try {
+            $conn->query("ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) NOT NULL DEFAULT '' AFTER major");
+        } catch (mysqli_sql_exception $e) {
+            if ($e->getCode() !== 1060) {
+                throw $e;
+            }
+        }
+    }
+}
+
 function is_logged_in(): bool
 {
     return isset($_SESSION["user_id"]);
@@ -188,6 +259,12 @@ function current_user(mysqli $conn): ?array
 {
     if (!is_logged_in()) {
         return null;
+    }
+
+    static $profilePhotoColumnChecked = false;
+    if (!$profilePhotoColumnChecked) {
+        ensure_user_profile_photo_column($conn);
+        $profilePhotoColumnChecked = true;
     }
 
     $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");

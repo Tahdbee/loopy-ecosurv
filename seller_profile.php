@@ -4,7 +4,7 @@ require_login();
 $user = current_user($conn);
 $sellerId = (int)($_GET["id"] ?? 0);
 
-$sellerQuery = $conn->prepare("SELECT id, full_name, faculty, major, created_at FROM users WHERE id = ? AND role = 'seller'");
+$sellerQuery = $conn->prepare("SELECT id, full_name, faculty, major, profile_image, created_at FROM users WHERE id = ? AND role = 'seller'");
 $sellerQuery->bind_param("i", $sellerId);
 $sellerQuery->execute();
 $seller = $sellerQuery->get_result()->fetch_assoc();
@@ -119,13 +119,24 @@ $roundedAverage = (int)round((float)$reviewStats["average_rating"]);
     <?php include "includes/navbar.php"; ?>
     <main class="max-w-7xl mx-auto p-4 space-y-8">
         <section class="seller-hero bg-white rounded-2xl shadow-sm p-6 md:p-8">
-            <p class="text-sm font-bold uppercase tracking-widest text-blue-600">LOOPLY Seller</p>
-            <h1 class="mt-2 text-3xl md:text-4xl font-bold"><?= e($seller["full_name"]) ?></h1>
-            <p class="mt-2 text-sm text-slate-500"><?= e($seller["faculty"] ?: "President University") ?><?= $seller["major"] ? " / " . e($seller["major"]) : "" ?></p>
-            <div class="mt-4 flex flex-wrap items-center gap-3">
-                <span class="seller-stars" aria-label="<?= number_format((float)$reviewStats["average_rating"], 1) ?> out of 5 stars"><?= str_repeat("★", $roundedAverage) ?><span><?= str_repeat("★", 5 - $roundedAverage) ?></span></span>
-                <span class="font-semibold"><?= number_format((float)$reviewStats["average_rating"], 1) ?> / 5</span>
-                <span class="text-sm text-slate-500"><?= (int)$reviewStats["review_count"] ?> <?= (int)$reviewStats["review_count"] === 1 ? "review" : "reviews" ?></span>
+            <div class="seller-hero-profile">
+                <div class="seller-profile-avatar" aria-hidden="true">
+                    <?php if (!empty($seller["profile_image"])): ?>
+                        <img src="<?= e($seller["profile_image"]) ?>" alt="">
+                    <?php else: ?>
+                        <?= e(strtoupper(substr($seller["full_name"], 0, 1))) ?>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <p class="text-sm font-bold uppercase tracking-widest text-blue-600">LOOPLY Seller</p>
+                    <h1 class="mt-2 text-3xl md:text-4xl font-bold"><?= e($seller["full_name"]) ?></h1>
+                    <p class="mt-2 text-sm text-slate-500"><?= e($seller["faculty"] ?: "President University") ?><?= $seller["major"] ? " / " . e($seller["major"]) : "" ?></p>
+                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                        <span class="seller-stars" aria-label="<?= number_format((float)$reviewStats["average_rating"], 1) ?> out of 5 stars"><?= str_repeat("★", $roundedAverage) ?><span><?= str_repeat("★", 5 - $roundedAverage) ?></span></span>
+                        <span class="font-semibold"><?= number_format((float)$reviewStats["average_rating"], 1) ?> / 5</span>
+                        <span class="text-sm text-slate-500"><?= (int)$reviewStats["review_count"] ?> <?= (int)$reviewStats["review_count"] === 1 ? "review" : "reviews" ?></span>
+                    </div>
+                </div>
             </div>
         </section>
 

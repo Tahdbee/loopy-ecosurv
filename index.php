@@ -46,7 +46,7 @@ $products = $stmt->get_result();
         <div class="landing-hero-glow landing-hero-glow-orange" aria-hidden="true"></div>
         <div class="landing-hero-copy">
             <p class="landing-eyebrow"><span class="landing-live-dot"></span>The campus marketplace</p>
-            <h1>Discover More.<br><span>Shop Different.</span></h1>
+            <h1>By Students.<br><span>For Students.</span></h1>
             <p class="landing-subtitle">Good finds, good prices, right around campus.</p>
             <div class="landing-hero-actions">
                 <a class="landing-cta" href="#marketplace">Find your next favorite <span aria-hidden="true">↘</span></a>

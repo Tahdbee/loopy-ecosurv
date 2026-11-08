@@ -74,16 +74,6 @@ $steps = [
         "secondary_label" => "Edit payment details",
         "secondary_url" => "seller_payment_settings.php",
     ],
-    "wallet_topped_up" => [
-        "title" => "Wallet topped up",
-        "description" => "Your simulated wallet balance has been updated.",
-        "next_title" => "Review your balance",
-        "next_description" => "You can check your wallet history or return to the marketplace.",
-        "next_label" => "View wallet",
-        "next_url" => "profile.php",
-        "secondary_label" => "Explore marketplace",
-        "secondary_url" => "index.php",
-    ],
     "order_created" => [
         "title" => "Order placed",
         "description" => "Your order request has been sent to the seller.",

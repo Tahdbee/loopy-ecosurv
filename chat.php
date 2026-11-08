@@ -21,11 +21,14 @@ if (!$validConversation) {
 }
 
 $partnerName = "";
+$partnerPhoto = "";
 if ($validConversation) {
-    $partnerQuery = $conn->prepare("SELECT full_name FROM users WHERE id = ?");
+    $partnerQuery = $conn->prepare("SELECT full_name, profile_image FROM users WHERE id = ?");
     $partnerQuery->bind_param("i", $partnerId);
     $partnerQuery->execute();
-    $partnerName = (string)($partnerQuery->get_result()->fetch_assoc()["full_name"] ?? "");
+    $partner = $partnerQuery->get_result()->fetch_assoc();
+    $partnerName = (string)($partner["full_name"] ?? "");
+    $partnerPhoto = (string)($partner["profile_image"] ?? "");
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && $validConversation) {
@@ -72,7 +75,9 @@ if ($validConversation) {
             <div class="chat-panel">
                 <header class="chat-header">
                     <a href="messages.php" class="chat-header-back" aria-label="Back to messages">←</a>
-                    <div class="chat-partner-avatar" aria-hidden="true"><?= e(strtoupper(substr($partnerName, 0, 1))) ?></div>
+                    <div class="chat-partner-avatar" aria-hidden="true">
+                        <?php if ($partnerPhoto !== ""): ?><img src="<?= e($partnerPhoto) ?>" alt=""><?php else: ?><?= e(strtoupper(substr($partnerName, 0, 1))) ?><?php endif; ?>
+                    </div>
                     <div class="chat-partner-copy">
                         <h1><?= e($partnerName) ?></h1>
                         <p><span class="chat-live-dot"></span> LOOPLY community member</p>
@@ -91,7 +96,11 @@ if ($validConversation) {
                         <?php while ($m = $messages->fetch_assoc()): ?>
                             <?php $isOwnMessage = (int)$m["sender_id"] === (int)$user["id"]; ?>
                             <article class="chat-message-row <?= $isOwnMessage ? "is-own-message" : "is-other-message" ?>">
-                                <?php if (!$isOwnMessage): ?><span class="chat-message-avatar" aria-hidden="true"><?= e(strtoupper(substr($partnerName, 0, 1))) ?></span><?php endif; ?>
+                                <?php if (!$isOwnMessage): ?>
+                                    <span class="chat-message-avatar" aria-hidden="true">
+                                        <?php if ($partnerPhoto !== ""): ?><img src="<?= e($partnerPhoto) ?>" alt=""><?php else: ?><?= e(strtoupper(substr($partnerName, 0, 1))) ?><?php endif; ?>
+                                    </span>
+                                <?php endif; ?>
                                 <div class="chat-message-content">
                                     <span class="chat-message-sender"><?= $isOwnMessage ? "You" : e($m["sender_name"]) ?></span>
                                     <p class="chat-message-bubble"><?= nl2br(e($m["message"])) ?></p>
