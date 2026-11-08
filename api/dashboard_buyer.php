@@ -31,8 +31,9 @@ if (isset($_GET["payment_status_check"])) {
     exit;
 }
 
-if (isset($_GET["complete"])) {
-    $tid = (int)$_GET["complete"];
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["complete"])) {
+    verify_csrf_token();
+    $tid = (int)$_POST["complete"];
     $stmt = $conn->prepare("UPDATE transactions SET buyer_completed = 1 WHERE id = ? AND buyer_id = ? AND payment_flow = 'legacy' AND payment_status <> 'Cancelled'");
     $stmt->bind_param("ii", $tid, $user["id"]);
     $stmt->execute();
@@ -62,6 +63,7 @@ if (isset($_GET["complete"])) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["upload_payment_proof"])) {
+    verify_csrf_token();
     $tid = (int)($_POST["transaction_id"] ?? 0);
     try {
         $check = $conn->prepare("SELECT id, seller_id FROM transactions WHERE id = ? AND buyer_id = ? AND payment_flow = 'gopay_qr' AND payment_type = 'online' AND seller_accepted = 1 AND payment_status NOT IN ('Completed', 'Cancelled')");
@@ -90,6 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["upload_payment_proof"
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["transaction_id"], $_POST["rating"])) {
+    verify_csrf_token();
     $tid = (int)$_POST["transaction_id"];
     $rating = max(1, min(5, (int)$_POST["rating"]));
     $comment = trim($_POST["comment"] ?? "");
@@ -211,7 +214,7 @@ foreach ($transactionRows as $transactionRow) {
                     <td class="min-w-52">
                         <?php if ($t["payment_flow"] === "gopay_qr" && $t["payment_status"] !== "Completed" && $t["payment_status"] !== "Cancelled"): ?>
                             <?php if ($t["buyer_payment_proof"]): ?>
-                                <a class="text-orange-600 underline" href="<?= e(asset_url($t["buyer_payment_proof"])) ?>" target="_blank" rel="noopener">View uploaded receipt</a>
+                                <a class="text-orange-600 underline" href="<?= e(protected_media_url($t["buyer_payment_proof"])) ?>" target="_blank" rel="noopener">View uploaded receipt</a>
                                 <p class="text-xs text-slate-500 mt-1">Waiting for seller verification.</p>
                             <?php elseif ((int)$t["seller_accepted"] !== 1): ?>
                                 <p class="text-xs text-slate-600">Wait for the seller to accept the order before paying or uploading proof.</p>
@@ -220,8 +223,8 @@ foreach ($transactionRows as $transactionRow) {
                                     <p class="text-xs font-medium text-slate-700">Pay the seller directly. Exact order total:</p>
                                     <p class="mt-1 text-sm font-bold text-slate-900">Rp <?= number_format((float)$t["amount"], 0, ",", ".") ?></p>
                                     <?php if ($t["seller_payment_qr"]): ?>
-                                        <a href="<?= e(asset_url($t["seller_payment_qr"])) ?>" target="_blank" rel="noopener">
-                                            <img src="<?= e(asset_url($t["seller_payment_qr"])) ?>" alt="Seller QRIS payment code" class="mx-auto mt-2 max-h-48 rounded-lg border bg-white p-1">
+                                        <a href="<?= e(protected_media_url($t["seller_payment_qr"])) ?>" target="_blank" rel="noopener">
+                                            <img src="<?= e(protected_media_url($t["seller_payment_qr"])) ?>" alt="Seller QRIS payment code" class="mx-auto mt-2 max-h-48 rounded-lg border bg-white p-1">
                                         </a>
                                     <?php elseif (!$t["seller_payment_instructions"]): ?>
                                         <p class="mt-2 text-xs text-amber-800">Seller QR is currently unavailable. Contact the seller before sending payment.</p>
@@ -235,7 +238,7 @@ foreach ($transactionRows as $transactionRow) {
                                 <?php endif; ?>
                                 <form method="post" enctype="multipart/form-data" class="mt-2 space-y-2">
                                     <input type="hidden" name="transaction_id" value="<?= (int)$t["id"] ?>">
-                                    <input type="file" name="payment_proof" accept="image/jpeg,image/png,image/webp" required class="block w-full text-xs">
+                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="file" name="payment_proof" accept="image/jpeg,image/png,image/webp" required class="block w-full text-xs">
                                     <button name="upload_payment_proof" value="1" class="rounded-lg bg-orange-500 px-3 py-1.5 text-white">Upload payment receipt</button>
                                 </form>
                             <?php endif; ?>
@@ -245,14 +248,14 @@ foreach ($transactionRows as $transactionRow) {
                             <?php endif; ?>
                             <p class="text-xs text-slate-600">Meet the seller at the agreed location. The seller uploads a receipt after receiving payment.</p>
                         <?php elseif ($t["payment_flow"] === "legacy" && $t["payment_status"] !== "Completed" && $t["payment_status"] !== "Cancelled"): ?>
-                            <a class="text-emerald-700" href="dashboard_buyer.php?complete=<?= (int)$t["id"] ?>">Mark Completed</a>
+                            <form method="post" class="inline"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="complete" value="<?= (int)$t["id"] ?>"><button class="text-emerald-700">Mark Completed</button></form>
                         <?php endif; ?>
                         <?php if ($t["seller_cash_receipt"]): ?>
-                            <a class="block text-orange-600 underline mt-2" href="<?= e(asset_url($t["seller_cash_receipt"])) ?>" target="_blank" rel="noopener">View seller cash receipt</a>
+                            <a class="block text-orange-600 underline mt-2" href="<?= e(protected_media_url($t["seller_cash_receipt"])) ?>" target="_blank" rel="noopener">View seller cash receipt</a>
                         <?php endif; ?>
                         <?php if ($t["payment_status"] === "Completed" && !$t["review_id"]): ?>
                             <form method="post" class="mt-2 space-y-1">
-                                <input type="hidden" name="transaction_id" value="<?= (int)$t["id"] ?>">
+                                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="transaction_id" value="<?= (int)$t["id"] ?>">
                                 <input type="number" name="rating" min="1" max="5" required class="border rounded px-2 py-1 w-16" placeholder="5">
                                 <input name="comment" class="border rounded px-2 py-1" placeholder="Review">
                                 <button class="bg-orange-500 text-white px-2 py-1 rounded">Submit</button>

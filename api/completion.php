@@ -213,7 +213,7 @@ if ($step === "order_created" && $itemId > 0) {
                     <?php if ((int)$orderPaymentInfo["seller_accepted"] !== 1): ?>
                         <p class="mt-3 text-sm text-slate-700">Wait for the seller to accept your order. Their payment instructions and personal QR code will appear in your buyer dashboard afterward.</p>
                     <?php elseif (!empty($orderPaymentInfo["payment_qr_image"])): ?>
-                        <img src="<?= e(asset_url($orderPaymentInfo["payment_qr_image"])) ?>" alt="Seller QRIS payment code" class="mx-auto mt-4 max-h-64 rounded-xl border bg-white p-2">
+                        <img src="<?= e(protected_media_url($orderPaymentInfo["payment_qr_image"])) ?>" alt="Seller QRIS payment code" class="mx-auto mt-4 max-h-64 rounded-xl border bg-white p-2">
                     <?php else: ?>
                         <p class="mt-3 text-sm text-slate-700">No seller QR code is available. If bank or e-wallet details are shown below, use those instructions instead.</p>
                     <?php endif; ?>

@@ -24,15 +24,17 @@ if ($focusedOrderId > 0) {
 }
 
 $message = "";
-if (isset($_GET["clear_notifications"])) {
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["clear_notifications"])) {
+    verify_csrf_token();
     $clear = $conn->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?");
     $clear->bind_param("i", $user["id"]);
     $clear->execute();
     header("Location: dashboard_seller.php");
     exit;
 }
-if (isset($_GET["delete"])) {
-    $pid = (int)$_GET["delete"];
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["delete"])) {
+    verify_csrf_token();
+    $pid = (int)$_POST["delete"];
     $stmt = $conn->prepare("DELETE FROM products WHERE id = ? AND seller_id = ?");
     $stmt->bind_param("ii", $pid, $user["id"]);
     $stmt->execute();
@@ -41,6 +43,7 @@ if (isset($_GET["delete"])) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"], $_POST["tid"])) {
+    verify_csrf_token();
     $tid = (int)$_POST["tid"];
     $completedAction = "";
     if ($_POST["action"] === "accept") {
@@ -55,6 +58,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"], $_POST["tid
         $s->bind_param("ii", $tid, $user["id"]);
         $s->execute();
         if ($s->affected_rows === 1) {
+            $release = $conn->prepare("UPDATE products p SET p.is_sold = 0 WHERE p.id = (SELECT t.product_id FROM transactions t WHERE t.id = ?) AND NOT EXISTS (SELECT 1 FROM transactions active WHERE active.product_id = p.id AND active.payment_status NOT IN ('Cancelled'))");
+            $release->bind_param("i", $tid);
+            $release->execute();
             $completedAction = "order_declined";
         }
     } elseif ($_POST["action"] === "verify_qr") {
@@ -86,6 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"], $_POST["tid
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["upload_cash_receipt"], $_POST["tid"])) {
+    verify_csrf_token();
     $tid = (int)$_POST["tid"];
     try {
         $check = $conn->prepare("SELECT id FROM transactions WHERE id = ? AND seller_id = ? AND payment_flow = 'cash_receipt' AND payment_type = 'cash' AND seller_accepted = 1 AND payment_status NOT IN ('Completed', 'Cancelled')");
@@ -120,8 +127,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["upload_cash_receipt"]
     }
 }
 
-if (isset($_GET["complete"])) {
-    $tid = (int)$_GET["complete"];
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["complete"])) {
+    verify_csrf_token();
+    $tid = (int)$_POST["complete"];
     $stmt = $conn->prepare("UPDATE transactions SET seller_completed = 1 WHERE id = ? AND seller_id = ? AND payment_flow = 'legacy' AND payment_status <> 'Cancelled'");
     $stmt->bind_param("ii", $tid, $user["id"]);
     $stmt->execute();
@@ -182,7 +190,7 @@ $unreadNotifications = (int)($notifCount->get_result()->fetch_assoc()["total"] ?
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <div class="flex justify-between items-center mb-3">
             <h2 class="font-bold">Notifications <?php if ($unreadNotifications > 0): ?><span class="ml-2 inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full bg-red-600 text-white text-xs"><?= $unreadNotifications ?></span><?php endif; ?></h2>
-            <a href="dashboard_seller.php?clear_notifications=1" class="text-sm text-orange-600">Mark all as read</a>
+            <form method="post" class="inline"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><button name="clear_notifications" value="1" class="text-sm text-orange-600">Mark all as read</button></form>
         </div>
         <div class="space-y-2">
             <?php if ($notifications->num_rows === 0): ?>
@@ -207,7 +215,7 @@ $unreadNotifications = (int)($notifCount->get_result()->fetch_assoc()["total"] ?
                     <p class="text-sm text-slate-500">Rp <?= number_format((float)$p["price"], 0, ",", ".") ?></p>
                     <div class="space-x-2">
                         <a href="edit_product.php?id=<?= (int)$p["id"] ?>" class="text-orange-600 text-sm">Edit</a>
-                        <a href="dashboard_seller.php?delete=<?= (int)$p["id"] ?>" class="text-red-600 text-sm">Delete</a>
+                        <form method="post" class="inline"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="delete" value="<?= (int)$p["id"] ?>"><button class="text-red-600 text-sm">Delete</button></form>
                     </div>
                 </div>
             <?php endwhile; ?>
@@ -248,39 +256,39 @@ $unreadNotifications = (int)($notifCount->get_result()->fetch_assoc()["total"] ?
                     </td>
                     <td class="min-w-56 space-y-2">
                         <?php if ($t["payment_flow"] === "gopay_qr" && $t["buyer_payment_proof"]): ?>
-                            <a class="block text-orange-600 underline" href="<?= e(asset_url($t["buyer_payment_proof"])) ?>" target="_blank" rel="noopener">View buyer payment receipt</a>
+                            <a class="block text-orange-600 underline" href="<?= e(protected_media_url($t["buyer_payment_proof"])) ?>" target="_blank" rel="noopener">View buyer payment receipt</a>
                         <?php endif; ?>
                         <?php if ($t["payment_status"] === "Pending" && (int)$t["seller_accepted"] === 0): ?>
                             <form method="post" class="inline">
-                                <input type="hidden" name="tid" value="<?= (int)$t["id"] ?>">
+                                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="tid" value="<?= (int)$t["id"] ?>">
                                 <button name="action" value="accept" class="text-emerald-700">Accept</button>
                             </form>
                             <?php if ($t["payment_flow"] !== "gopay_qr" || !$t["buyer_payment_proof"]): ?>
                                 <form method="post" class="inline">
-                                    <input type="hidden" name="tid" value="<?= (int)$t["id"] ?>">
+                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="tid" value="<?= (int)$t["id"] ?>">
                                     <button name="action" value="reject" class="text-red-700">Reject</button>
                                 </form>
                             <?php endif; ?>
                         <?php endif; ?>
                         <?php if ($t["payment_flow"] === "cash_receipt" && (int)$t["seller_accepted"] === 1 && $t["payment_status"] !== "Completed" && $t["payment_status"] !== "Cancelled"): ?>
                             <form method="post" enctype="multipart/form-data" class="space-y-2">
-                                <input type="hidden" name="tid" value="<?= (int)$t["id"] ?>">
+                                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="tid" value="<?= (int)$t["id"] ?>">
                                 <label class="block text-xs text-slate-600">Upload cash receipt after receiving payment</label>
                                 <input type="file" name="cash_receipt" accept="image/jpeg,image/png,image/webp" required class="block w-full text-xs">
                                 <button name="upload_cash_receipt" value="1" class="rounded-lg bg-orange-500 px-3 py-1.5 text-white">Upload receipt & complete</button>
                             </form>
                         <?php elseif ($t["payment_flow"] === "gopay_qr" && (int)$t["seller_accepted"] === 1 && $t["buyer_payment_proof"] && $t["payment_status"] !== "Completed" && $t["payment_status"] !== "Cancelled"): ?>
                             <form method="post">
-                                <input type="hidden" name="tid" value="<?= (int)$t["id"] ?>">
+                                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="tid" value="<?= (int)$t["id"] ?>">
                                 <button name="action" value="verify_qr" class="rounded-lg bg-orange-500 px-3 py-1.5 text-white">Verify payment & complete</button>
                             </form>
                         <?php elseif ($t["payment_flow"] === "gopay_qr" && !$t["buyer_payment_proof"] && $t["payment_status"] !== "Completed" && $t["payment_status"] !== "Cancelled"): ?>
                             <p class="text-xs text-slate-600">Waiting for the buyer to upload payment proof.</p>
                         <?php elseif ($t["payment_flow"] === "legacy" && $t["payment_status"] !== "Completed" && $t["payment_status"] !== "Cancelled"): ?>
-                            <a class="text-blue-700" href="dashboard_seller.php?complete=<?= (int)$t["id"] ?>">Mark Completed</a>
+                            <form method="post" class="inline"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="complete" value="<?= (int)$t["id"] ?>"><button class="text-blue-700">Mark Completed</button></form>
                         <?php endif; ?>
                         <?php if ($t["seller_cash_receipt"]): ?>
-                            <a class="block text-orange-600 underline" href="<?= e(asset_url($t["seller_cash_receipt"])) ?>" target="_blank" rel="noopener">View cash receipt</a>
+                            <a class="block text-orange-600 underline" href="<?= e(protected_media_url($t["seller_cash_receipt"])) ?>" target="_blank" rel="noopener">View cash receipt</a>
                         <?php endif; ?>
                     </td>
                 </tr>

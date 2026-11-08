@@ -27,6 +27,7 @@ $hasSellerQr = !empty($product["payment_qr_image"]);
 $hasSellerOnlinePayment = $hasSellerQr || trim($product["payment_instructions"]) !== "";
 $selectedPaymentType = $hasSellerOnlinePayment ? "online" : "cash";
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    verify_csrf_token();
     $location = trim($_POST["meetup_location"] ?? "");
     $submittedTime = trim($_POST["meetup_time"] ?? "");
     $time = "";
@@ -61,6 +62,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } elseif ($message === "") {
         $conn->begin_transaction();
         try {
+            $lock = $conn->prepare("UPDATE products SET is_sold = 1 WHERE id = ? AND is_sold = 0 AND seller_id <> ?");
+            $lock->bind_param("ii", $productId, $user["id"]);
+            $lock->execute();
+            if ($lock->affected_rows !== 1) {
+                throw new RuntimeException("This item has already been reserved or sold.");
+            }
             $stmt = $conn->prepare("INSERT INTO transactions (product_id, buyer_id, seller_id, meetup_location, meetup_time, payment_type, payment_method, payment_status, payment_flow, amount) VALUES (?, ?, ?, ?, NULLIF(?, ''), ?, ?, 'Pending', ?, ?)");
             $stmt->bind_param("iiisssssd", $productId, $user["id"], $product["seller_user_id"], $location, $time, $paymentType, $paymentMethod, $paymentFlow, $product["price"]);
             $stmt->execute();
@@ -99,7 +106,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <?php if ($message): ?>
             <p role="alert" class="mt-3 text-sm text-red-700"><?= e($message) ?></p>
         <?php endif; ?>
-        <form method="post" class="space-y-3 mt-4">
+        <form method="post" class="space-y-3 mt-4"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
             <div>
                 <label class="text-sm font-medium" for="meetup_location">Meet-up Location</label>
                 <select id="meetup_location" name="meetup_location" class="mt-1 w-full border rounded-xl px-3 py-2">

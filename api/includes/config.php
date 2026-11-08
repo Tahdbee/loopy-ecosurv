@@ -1,6 +1,7 @@
 <?php
 ini_set("session.cookie_httponly", "1");
 ini_set("session.cookie_samesite", "Lax");
+ini_set("session.use_strict_mode", "1");
 if (
     (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off") ||
     (int)($_SERVER["SERVER_PORT"] ?? 0) === 443
@@ -24,6 +25,7 @@ $conn->set_charset("utf8mb4");
 date_default_timezone_set("Asia/Jakarta");
 
 define("PUBLIC_DIRECTORY", dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . "public");
+define("PRIVATE_UPLOAD_DIRECTORY", dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . "private_uploads");
 
 function e(string $value): string
 {
@@ -34,6 +36,29 @@ function asset_url(string $path): string
 {
     if ($path === "" || preg_match("#^(?:https?:)?//#i", $path) || str_starts_with($path, "/")) {
         return $path;
+    }
+
+    function csrf_token(): string
+    {
+        if (empty($_SESSION["csrf_token"])) {
+            $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+        }
+
+        return $_SESSION["csrf_token"];
+    }
+
+    function verify_csrf_token(): void
+    {
+        $submitted = $_POST["csrf_token"] ?? "";
+        if (!is_string($submitted) || !hash_equals(csrf_token(), $submitted)) {
+            http_response_code(400);
+            exit("Invalid request token.");
+        }
+    }
+
+    function protected_media_url(string $path): string
+    {
+        return "private_media.php?path=" . rawurlencode($path);
     }
 
     return "/" . ltrim($path, "/");
@@ -155,7 +180,7 @@ function upload_transaction_proof(array $file): string
         throw new RuntimeException("Proof images must be JPG, PNG, or WEBP files.");
     }
 
-    $directory = PUBLIC_DIRECTORY . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . "payment-proofs";
+    $directory = PRIVATE_UPLOAD_DIRECTORY . DIRECTORY_SEPARATOR . "payment-proofs";
     if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
         throw new RuntimeException("Could not create the payment proof directory.");
     }
@@ -166,7 +191,7 @@ function upload_transaction_proof(array $file): string
         throw new RuntimeException("Could not save the payment proof image.");
     }
 
-    return "uploads/payment-proofs/" . $filename;
+    return "private/payment-proofs/" . $filename;
 }
 
 function upload_seller_payment_qr(array $file, string $existing = ""): string
@@ -191,7 +216,7 @@ function upload_seller_payment_qr(array $file, string $existing = ""): string
         throw new RuntimeException("The QR image must be JPG, PNG, or WEBP.");
     }
 
-    $directory = PUBLIC_DIRECTORY . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . "seller-payment-qrs";
+    $directory = PRIVATE_UPLOAD_DIRECTORY . DIRECTORY_SEPARATOR . "seller-payment-qrs";
     if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
         throw new RuntimeException("Could not create the seller QR upload directory.");
     }
@@ -202,7 +227,7 @@ function upload_seller_payment_qr(array $file, string $existing = ""): string
         throw new RuntimeException("Could not save the seller QR image.");
     }
 
-    return "uploads/seller-payment-qrs/" . $filename;
+    return "private/seller-payment-qrs/" . $filename;
 }
 
 function ensure_transaction_proof_columns(mysqli $conn): void

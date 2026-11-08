@@ -9,6 +9,7 @@ if (is_logged_in()) {
 
 $error = "";
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    verify_csrf_token();
     $email = trim($_POST["email"] ?? "");
     $password = $_POST["password"] ?? "";
 
@@ -19,6 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $user = $res->fetch_assoc();
 
     if ($user && password_verify($password, $user["password_hash"])) {
+        session_regenerate_id(true);
         $_SESSION["user_id"] = $user["id"];
         redirect_dashboard($user["role"]);
     } else {
@@ -28,4 +30,4 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 ?>
 <!doctype html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Login | LOOPLY</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="/assets/css/app.css"></head>
-<body class="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4"><div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-6"><h1 class="brand-wordmark text-2xl">looply<span>.</span></h1><p class="brand-tagline text-sm mt-1">Discover More. Shop Different.</p><p class="text-sm text-slate-500 mt-3">Campus marketplace for President University students.</p><?php if ($error): ?><div class="mt-4 bg-red-50 text-red-700 px-3 py-2 rounded-lg text-sm"><?= e($error) ?></div><?php endif; ?><form method="post" class="mt-5 space-y-4"><div><label class="text-sm font-medium">University Email</label><input name="email" type="email" required class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="you@student.president.ac.id"></div><div><label class="text-sm font-medium">Password</label><input name="password" type="password" required class="mt-1 w-full border rounded-xl px-3 py-2"></div><button class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2 font-semibold">Login</button></form><p class="text-sm mt-4">No account? <a href="register.php" class="text-blue-600 font-semibold">Register</a></p></div><?php include "includes/footer.php"; ?></body></html>
+<body class="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4"><div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-6"><h1 class="brand-wordmark text-2xl">looply<span>.</span></h1><p class="brand-tagline text-sm mt-1">Discover More. Shop Different.</p><p class="text-sm text-slate-500 mt-3">Campus marketplace for President University students.</p><?php if ($error): ?><div class="mt-4 bg-red-50 text-red-700 px-3 py-2 rounded-lg text-sm"><?= e($error) ?></div><?php endif; ?><form method="post" class="mt-5 space-y-4"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><div><label class="text-sm font-medium">University Email</label><input name="email" type="email" required class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="you@student.president.ac.id"></div><div><label class="text-sm font-medium">Password</label><input name="password" type="password" required class="mt-1 w-full border rounded-xl px-3 py-2"></div><button class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2 font-semibold">Login</button></form><p class="text-sm mt-4">No account? <a href="register.php" class="text-blue-600 font-semibold">Register</a></p></div><?php include "includes/footer.php"; ?></body></html>

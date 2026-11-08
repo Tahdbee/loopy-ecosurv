@@ -9,6 +9,7 @@ if ($user["role"] !== "seller") {
 
 $error = "";
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["save_payment_settings"])) {
+    verify_csrf_token();
     $instructionsInput = $_POST["payment_instructions"] ?? "";
     $paymentInstructions = is_string($instructionsInput) ? trim($instructionsInput) : "";
     if (strlen($paymentInstructions) > 5000) {
@@ -61,7 +62,7 @@ if (!$settings) {
             <p role="alert" class="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700"><?= e($error) ?></p>
         <?php endif; ?>
 
-        <form method="post" enctype="multipart/form-data" class="mt-6 space-y-5">
+        <form method="post" enctype="multipart/form-data" class="mt-6 space-y-5"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
             <div>
                 <label for="payment_instructions" class="text-sm font-semibold text-slate-800">Payment instructions and account details</label>
                 <textarea id="payment_instructions" name="payment_instructions" maxlength="5000" rows="6" class="mt-2 w-full rounded-xl border px-3 py-2" placeholder="Example: BCA · Account name: Your Name · Account number: 1234567890&#10;DANA · Number: 08xxxxxxxxxx&#10;For cash, please pay at the agreed campus meet-up."><?= e($settings["payment_instructions"] ?? "") ?></textarea>
@@ -72,7 +73,7 @@ if (!$settings) {
                 <label for="payment_qr" class="text-sm font-semibold text-slate-800">Your QRIS payment code (optional)</label>
                 <p class="mt-1 text-xs leading-5 text-slate-600">Upload your own merchant QR. Buyers can choose QR payment only when your QR is set up. LOOPLY does not process or automatically verify the payment.</p>
                 <?php if (!empty($settings["payment_qr_image"])): ?>
-                    <img src="<?= e(asset_url($settings["payment_qr_image"])) ?>" alt="Your current seller payment QR" class="mt-3 max-h-64 rounded-xl border bg-white p-2">
+                    <img src="<?= e(protected_media_url($settings["payment_qr_image"])) ?>" alt="Your current seller payment QR" class="mt-3 max-h-64 rounded-xl border bg-white p-2">
                     <label class="mt-3 flex items-center gap-2 text-sm text-slate-700">
                         <input type="checkbox" name="remove_payment_qr" value="1" class="h-4 w-4">
                         Remove my QR code
