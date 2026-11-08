@@ -30,35 +30,96 @@ $stmt = $conn->prepare(
 $stmt->bind_param("iiii", $user["id"], $user["id"], $user["id"], $user["id"]);
 $stmt->execute();
 $conversations = $stmt->get_result();
+$conversationRows = [];
+while ($conversationRow = $conversations->fetch_assoc()) {
+    $conversationRows[] = $conversationRow;
+}
+$latestConversation = $conversationRows[0] ?? null;
 ?>
 <!doctype html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Messages | LOOPLY</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="assets/css/app.css"></head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>
-<main class="max-w-3xl mx-auto p-4">
-    <a href="index.php" class="text-blue-700 text-sm">&larr; Home</a>
-    <div class="mt-3 bg-white rounded-2xl shadow-sm p-4">
-        <h1 class="text-xl font-bold text-blue-700">Messages</h1>
-        <div class="mt-4 divide-y">
+<main class="messages-workspace mx-auto max-w-7xl p-4">
+    <header class="messages-page-heading scroll-reveal">
+        <div>
+            <p class="landing-section-kicker">Your campus, one conversation away</p>
+            <h1>Messages<span>.</span></h1>
+            <p class="messages-page-subtitle">Make a plan, ask a question, find your next favorite thing.</p>
+        </div>
+        <a href="index.php#marketplace" class="messages-explore-link">Explore finds <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <section class="messages-dashboard scroll-reveal" aria-label="Your message inbox">
+        <aside class="messages-sidebar">
+            <div class="messages-sidebar-top">
+                <div>
+                    <p class="messages-overline">LOOPLY INBOX</p>
+                    <h2>Your conversations</h2>
+                </div>
+                <span class="messages-count"><?= $conversations->num_rows ?></span>
+            </div>
+            <a href="index.php#marketplace" class="messages-new-chat"><span aria-hidden="true">＋</span> Find someone to chat</a>
+            <div class="messages-conversation-list">
             <?php if ($conversations->num_rows === 0): ?>
-                <p class="py-4 text-sm text-slate-500">No chats yet.</p>
+                <div class="messages-list-empty">
+                    <span aria-hidden="true">✦</span>
+                    <p>No conversations yet.</p>
+                    <small>Ask a seller about something you like.</small>
+                </div>
             <?php else: ?>
-                <?php while ($conversation = $conversations->fetch_assoc()): ?>
-                    <a href="chat.php?product_id=<?= (int)$conversation["product_id"] ?>&partner_id=<?= (int)$conversation["partner_id"] ?>" class="block py-4 hover:bg-slate-50">
-                        <div class="flex justify-between gap-3">
-                            <div>
-                                <p class="font-semibold"><?= e($conversation["partner_name"]) ?></p>
-                                <p class="text-sm text-blue-700"><?= e($conversation["product_name"]) ?></p>
-                            </div>
-                            <p class="text-xs text-slate-500"><?= e($conversation["created_at"]) ?></p>
-                        </div>
-                        <p class="mt-1 text-sm text-slate-600 truncate"><?= e($conversation["message"]) ?></p>
+                <?php foreach ($conversationRows as $conversation): ?>
+                    <a href="chat.php?product_id=<?= (int)$conversation["product_id"] ?>&partner_id=<?= (int)$conversation["partner_id"] ?>" class="messages-conversation">
+                        <span class="messages-avatar" aria-hidden="true"><?= e(strtoupper(substr($conversation["partner_name"], 0, 1))) ?></span>
+                        <span class="messages-conversation-copy">
+                            <span class="messages-conversation-topline">
+                                <strong><?= e($conversation["partner_name"]) ?></strong>
+                                <time><?= e(date("M j", strtotime($conversation["created_at"]))) ?></time>
+                            </span>
+                            <span class="messages-product-name"><?= e($conversation["product_name"]) ?></span>
+                            <span class="messages-preview"><?= e($conversation["message"]) ?></span>
+                        </span>
+                        <span class="messages-conversation-arrow" aria-hidden="true">↗</span>
                     </a>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </div>
+            <div class="messages-sidebar-note">
+                <span aria-hidden="true">✳</span>
+                <p><strong>Good chats start with good finds.</strong><br>Be kind, meet safely, and enjoy campus shopping.</p>
+            </div>
+        </aside>
+
+        <div class="messages-welcome">
+            <div class="messages-welcome-art" aria-hidden="true">
+                <span class="messages-art-orbit messages-art-orbit-one"></span>
+                <span class="messages-art-orbit messages-art-orbit-two"></span>
+                <span class="messages-art-spark messages-art-spark-one">✦</span>
+                <span class="messages-art-spark messages-art-spark-two">✧</span>
+                <div class="messages-chat-bubble messages-chat-bubble-left">Is this still available?</div>
+                <div class="messages-chat-bubble messages-chat-bubble-right">Yes! Want to meet on campus? <span>✦</span></div>
+                <div class="messages-art-center"><span>looply<i>.</i></span></div>
+            </div>
+            <p class="landing-section-kicker">A little hello goes a long way</p>
+            <h2>Find it. Ask about it.<br><span>Make it yours.</span></h2>
+            <p class="messages-welcome-copy">Your conversations help campus finds find a new home. Choose a chat to pick up where you left off, or discover something new.</p>
+            <?php if ($latestConversation): ?>
+                <a class="messages-resume-button" href="chat.php?product_id=<?= (int)$latestConversation["product_id"] ?>&partner_id=<?= (int)$latestConversation["partner_id"] ?>">Resume your latest chat <span aria-hidden="true">→</span></a>
+            <?php else: ?>
+                <a class="messages-resume-button" href="index.php#marketplace">Browse campus finds <span aria-hidden="true">→</span></a>
             <?php endif; ?>
         </div>
-    </div>
+
+        <aside class="messages-sidecard">
+            <div class="messages-sidecard-icon" aria-hidden="true">✳</div>
+            <p class="messages-overline">THE LOOPLY WAY</p>
+            <h2>Good things happen when we connect.</h2>
+            <p>Ask about an item's condition, agree on a public campus meetup, and make your next find a little more personal.</p>
+            <a href="index.php#marketplace">See what's around <span aria-hidden="true">↗</span></a>
+            <div class="messages-sidecard-decoration" aria-hidden="true">looply.</div>
+        </aside>
+    </section>
 </main>
 <?php include "includes/footer.php"; ?>
 </body>

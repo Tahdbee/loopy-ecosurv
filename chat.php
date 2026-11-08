@@ -5,7 +5,7 @@ $user = current_user($conn);
 $productId = (int)($_GET["product_id"] ?? 0);
 $partnerId = (int)($_GET["partner_id"] ?? 0);
 $chatError = "";
-$productCheck = $conn->prepare("SELECT seller_id FROM products WHERE id = ?");
+$productCheck = $conn->prepare("SELECT p.seller_id, p.name, p.image1, p.price, u.full_name seller_name FROM products p JOIN users u ON u.id = p.seller_id WHERE p.id = ?");
 $productCheck->bind_param("i", $productId);
 $productCheck->execute();
 $chatProduct = $productCheck->get_result()->fetch_assoc();
@@ -18,6 +18,14 @@ $validConversation = $productId > 0
 
 if (!$validConversation) {
     $chatError = "This conversation is unavailable. You cannot chat with your own account.";
+}
+
+$partnerName = "";
+if ($validConversation) {
+    $partnerQuery = $conn->prepare("SELECT full_name FROM users WHERE id = ?");
+    $partnerQuery->bind_param("i", $partnerId);
+    $partnerQuery->execute();
+    $partnerName = (string)($partnerQuery->get_result()->fetch_assoc()["full_name"] ?? "");
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && $validConversation) {
@@ -36,4 +44,118 @@ if ($validConversation) {
     $messages = $stmt->get_result();
 }
 ?>
-<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chat | LOOPLY</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="assets/css/app.css"></head><body class="bg-slate-50 min-h-screen"><?php include "includes/navbar.php"; ?><main class="max-w-3xl mx-auto p-4"><div class="mt-3 bg-white rounded-2xl shadow-sm p-4"><h1 class="text-xl font-bold text-blue-700">Buyer-Seller Chat</h1><?php if ($chatError): ?><p role="alert" class="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800"><?= e($chatError) ?></p><?php else: ?><div class="mt-4 border rounded-xl p-3 h-80 overflow-y-auto bg-slate-50"><?php if ($messages): while ($m = $messages->fetch_assoc()): ?><div class="mb-2 <?= (int)$m["sender_id"] === (int)$user["id"] ? "text-right" : "text-left" ?>"><p class="text-xs text-slate-500"><?= e($m["sender_name"]) ?></p><span class="inline-block px-3 py-2 rounded-xl bg-white border"><?= e($m["message"]) ?></span></div><?php endwhile; endif; ?></div><form method="post" class="mt-3 flex gap-2"><input name="message" required placeholder="Ask about condition, price, meeting time..." class="flex-1 border rounded-xl px-3 py-2"><button class="bg-blue-600 text-white rounded-xl px-4">Send</button></form><?php endif; ?></div></main><?php include "includes/footer.php"; ?></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with <?= e($partnerName ?: "seller") ?> | LOOPLY</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body class="bg-slate-50 min-h-screen">
+<?php include "includes/navbar.php"; ?>
+<main class="chat-workspace mx-auto max-w-7xl p-4">
+    <div class="chat-topbar">
+        <a href="messages.php" class="chat-back-link"><span aria-hidden="true">←</span> All messages</a>
+        <p><span class="chat-live-dot"></span> A campus conversation</p>
+    </div>
+    <?php if ($chatError): ?>
+        <section class="chat-error-panel" role="alert">
+            <span aria-hidden="true">✦</span>
+            <h1>Conversation unavailable</h1>
+            <p><?= e($chatError) ?></p>
+            <a href="messages.php">Back to messages</a>
+        </section>
+    <?php else: ?>
+        <section class="chat-layout">
+            <div class="chat-panel">
+                <header class="chat-header">
+                    <a href="messages.php" class="chat-header-back" aria-label="Back to messages">←</a>
+                    <div class="chat-partner-avatar" aria-hidden="true"><?= e(strtoupper(substr($partnerName, 0, 1))) ?></div>
+                    <div class="chat-partner-copy">
+                        <h1><?= e($partnerName) ?></h1>
+                        <p><span class="chat-live-dot"></span> LOOPLY community member</p>
+                    </div>
+                    <a class="chat-item-chip" href="product_detail.php?id=<?= $productId ?>">About this find <span aria-hidden="true">↗</span></a>
+                </header>
+
+                <div class="chat-thread" id="chat-thread" aria-live="polite">
+                    <div class="chat-thread-intro">
+                        <span class="chat-thread-spark" aria-hidden="true">✦</span>
+                        <p>You’re chatting about</p>
+                        <a href="product_detail.php?id=<?= $productId ?>"><?= e($chatProduct["name"]) ?></a>
+                        <span class="chat-thread-price">Rp <?= number_format((float)$chatProduct["price"], 0, ",", ".") ?></span>
+                    </div>
+                    <?php if ($messages && $messages->num_rows > 0): ?>
+                        <?php while ($m = $messages->fetch_assoc()): ?>
+                            <?php $isOwnMessage = (int)$m["sender_id"] === (int)$user["id"]; ?>
+                            <article class="chat-message-row <?= $isOwnMessage ? "is-own-message" : "is-other-message" ?>">
+                                <?php if (!$isOwnMessage): ?><span class="chat-message-avatar" aria-hidden="true"><?= e(strtoupper(substr($partnerName, 0, 1))) ?></span><?php endif; ?>
+                                <div class="chat-message-content">
+                                    <span class="chat-message-sender"><?= $isOwnMessage ? "You" : e($m["sender_name"]) ?></span>
+                                    <p class="chat-message-bubble"><?= nl2br(e($m["message"])) ?></p>
+                                    <time><?= e(date("g:i a · M j", strtotime($m["created_at"]))) ?></time>
+                                </div>
+                            </article>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="chat-first-message">
+                            <span aria-hidden="true">✧</span>
+                            <p>This is the start of something good.</p>
+                            <small>Say hello or ask a question about the item.</small>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <form method="post" class="chat-composer">
+                    <label class="sr-only" for="chat-message">Your message</label>
+                    <textarea id="chat-message" name="message" required rows="1" maxlength="2000" placeholder="Ask about the item, condition, or meetup..."></textarea>
+                    <div class="chat-composer-bottom">
+                        <p><span aria-hidden="true">✳</span> Enter to send · Shift+Enter for a new line</p>
+                        <button type="submit" aria-label="Send message">Send <span aria-hidden="true">↗</span></button>
+                    </div>
+                </form>
+            </div>
+
+            <aside class="chat-context-panel">
+                <p class="messages-overline">THE ITEM IN THIS CHAT</p>
+                <a class="chat-context-product" href="product_detail.php?id=<?= $productId ?>">
+                    <div class="chat-context-image"><img src="<?= e($chatProduct["image1"]) ?>" alt="<?= e($chatProduct["name"]) ?>"></div>
+                    <div class="chat-context-copy">
+                        <h2><?= e($chatProduct["name"]) ?></h2>
+                        <p>Rp <?= number_format((float)$chatProduct["price"], 0, ",", ".") ?></p>
+                        <span>View item details <span aria-hidden="true">↗</span></span>
+                    </div>
+                </a>
+                <div class="chat-context-divider"></div>
+                <div class="chat-safety-note">
+                    <span aria-hidden="true">✳</span>
+                    <div>
+                        <h3>Meet campus-safe</h3>
+                        <p>Arrange to meet in a public place on campus. Confirm the item and payment together.</p>
+                    </div>
+                </div>
+                <div class="chat-context-decoration" aria-hidden="true">Good finds,<br>better connections.</div>
+            </aside>
+        </section>
+        <script>
+        const chatThread = document.getElementById("chat-thread");
+        chatThread.scrollTop = chatThread.scrollHeight;
+        const chatComposer = document.querySelector(".chat-composer textarea");
+        chatComposer.addEventListener("input", () => {
+            chatComposer.style.height = "auto";
+            chatComposer.style.height = `${Math.min(chatComposer.scrollHeight, 140)}px`;
+        });
+        chatComposer.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+                event.preventDefault();
+                chatComposer.form.requestSubmit();
+            }
+        });
+        </script>
+    <?php endif; ?>
+</main>
+<?php include "includes/footer.php"; ?>
+</body>
+</html>
