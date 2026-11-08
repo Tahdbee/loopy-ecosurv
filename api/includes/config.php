@@ -10,11 +10,14 @@ if (
 }
 session_start();
 
-$dbHost = getenv("DB_HOST") ?: "127.0.0.1";
-$dbUser = getenv("DB_USER") ?: "root";
-$dbPass = getenv("DB_PASSWORD") ?: "";
-$dbName = getenv("DB_NAME") ?: "looply";
-$dbPort = (int)(getenv("DB_PORT") ?: 3306);
+$dbHost = getenv("DB_HOST") ?: (getenv("MYSQLHOST") ?: "127.0.0.1");
+$dbUser = getenv("DB_USER") ?: (getenv("MYSQLUSER") ?: "root");
+$dbPass = getenv("DB_PASSWORD");
+if ($dbPass === false) {
+    $dbPass = getenv("MYSQLPASSWORD") ?: "";
+}
+$dbName = getenv("DB_NAME") ?: (getenv("MYSQLDATABASE") ?: "looply");
+$dbPort = (int)(getenv("DB_PORT") ?: (getenv("MYSQLPORT") ?: 3306));
 
 $conn = new mysqli($dbHost, $dbUser, $dbPass, $dbName, $dbPort);
 if ($conn->connect_error) {
