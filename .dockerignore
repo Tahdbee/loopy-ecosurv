@@ -1,0 +1,7 @@
+.git
+.vscode
+.env
+.env.*
+!.env.example
+README.md
+SECURITY-REVIEW.md
