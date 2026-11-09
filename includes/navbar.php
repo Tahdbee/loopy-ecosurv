@@ -44,10 +44,6 @@ if ($user["role"] === "seller") {
                         <span aria-hidden="true">♙</span>
                         <span>Edit profile</span>
                     </a>
-                    <a href="profile.php#settings">
-                        <span aria-hidden="true">⚙</span>
-                        <span>Settings</span>
-                    </a>
                     <div class="looply-account-menu-divider"></div>
                     <a href="logout.php" class="looply-account-logout">
                         <span aria-hidden="true">↪</span>
@@ -63,7 +59,6 @@ if ($user["role"] === "seller") {
                     <a href="<?= e($item["href"]) ?>" class="<?= $item["active"] ? "is-active" : "" ?>"><?= e($item["label"]) ?></a>
                 <?php endforeach; ?>
                 <a href="profile.php#profile">Edit profile</a>
-                <a href="profile.php#settings">Settings</a>
                 <a href="logout.php">Log out</a>
             </div>
         </details>
