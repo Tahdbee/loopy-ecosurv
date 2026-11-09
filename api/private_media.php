@@ -9,17 +9,37 @@ if (!is_string($relativePath) || !preg_match("#^(private|uploads)/(payment-proof
 }
 
 $user = current_user($conn);
-$path = $conn->real_escape_string($relativePath);
 $userId = (int)$user["id"];
-$access = $conn->query(
-    "SELECT 1 FROM users WHERE id = $userId AND payment_qr_image = '$path'
-     UNION ALL
-     SELECT 1 FROM transactions
-     WHERE (buyer_id = $userId OR seller_id = $userId)
-       AND (buyer_payment_proof = '$path' OR seller_cash_receipt = '$path')
-     LIMIT 1"
-);
-if (!$access || !$access->fetch_assoc()) {
+if ($user["role"] === "admin") {
+    $access = $conn->prepare(
+        "SELECT 1 FROM users WHERE id = ? AND payment_qr_image = ?
+         UNION ALL
+         SELECT 1 FROM transactions WHERE buyer_payment_proof = ? OR seller_cash_receipt = ?
+         LIMIT 1"
+    );
+    $access->bind_param("isss", $userId, $relativePath, $relativePath, $relativePath);
+} elseif ($user["role"] === "staff") {
+    $access = $conn->prepare(
+        "SELECT 1 FROM transactions t
+         JOIN moderation_reports r ON r.target_type = 'transaction' AND r.target_id = t.id
+         WHERE r.status IN ('new', 'in_review') AND (r.assigned_to IS NULL OR r.assigned_to = ?)
+           AND (t.buyer_payment_proof = ? OR t.seller_cash_receipt = ?)
+         LIMIT 1"
+    );
+    $access->bind_param("iss", $userId, $relativePath, $relativePath);
+} else {
+    $access = $conn->prepare(
+        "SELECT 1 FROM users WHERE id = ? AND payment_qr_image = ?
+         UNION ALL
+         SELECT 1 FROM transactions
+         WHERE (buyer_id = ? OR seller_id = ?)
+           AND (buyer_payment_proof = ? OR seller_cash_receipt = ?)
+         LIMIT 1"
+    );
+    $access->bind_param("isiiss", $userId, $relativePath, $userId, $userId, $relativePath, $relativePath);
+}
+$access->execute();
+if (!$access->get_result()->fetch_assoc()) {
     http_response_code(403);
     exit;
 }

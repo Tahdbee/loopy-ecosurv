@@ -30,6 +30,17 @@ date_default_timezone_set("Asia/Jakarta");
 define("PUBLIC_DIRECTORY", dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . "public");
 define("PRIVATE_UPLOAD_DIRECTORY", dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . "private_uploads");
 
+function app_base_path(): string
+{
+    $scriptName = str_replace("\\", "/", $_SERVER["SCRIPT_NAME"] ?? "");
+    $apiMarker = strrpos($scriptName, "/api/");
+    if ($apiMarker === false) {
+        return "";
+    }
+
+    return substr($scriptName, 0, $apiMarker);
+}
+
 function e(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
@@ -38,10 +49,14 @@ function e(string $value): string
 function asset_url(string $path): string
 {
     if ($path === "" || preg_match("#^(?:https?:)?//#i", $path) || str_starts_with($path, "/")) {
-        return $path;
+        if ($path === "" || preg_match("#^(?:https?:)?//#i", $path)) {
+            return $path;
+        }
     }
 
-    return "/" . ltrim($path, "/");
+    $basePath = app_base_path();
+    $publicPath = $basePath === "" ? "" : $basePath . "/public";
+    return $publicPath . "/" . ltrim($path, "/");
 }
 
 function csrf_token(): string
@@ -290,6 +305,89 @@ function ensure_user_profile_photo_column(mysqli $conn): void
     }
 }
 
+function ensure_admin_features(mysqli $conn): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+
+    $roleColumn = $conn->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch_assoc();
+    if ($roleColumn && $roleColumn["Type"] !== "enum('buyer','seller','staff','admin')") {
+        $conn->query("ALTER TABLE users MODIFY role ENUM('buyer', 'seller', 'staff', 'admin') NOT NULL DEFAULT 'buyer'");
+    }
+
+    $columns = [
+        "is_active" => "TINYINT(1) NOT NULL DEFAULT 1 AFTER is_verified",
+        "suspension_reason" => "VARCHAR(500) NOT NULL DEFAULT '' AFTER is_active",
+    ];
+    foreach ($columns as $column => $definition) {
+        if ($conn->query("SHOW COLUMNS FROM users LIKE '$column'")->num_rows === 0) {
+            try {
+                $conn->query("ALTER TABLE users ADD COLUMN `$column` $definition");
+            } catch (mysqli_sql_exception $e) {
+                if ($e->getCode() !== 1060) {
+                    throw $e;
+                }
+            }
+        }
+    }
+
+    $productColumns = [
+        "is_hidden" => "TINYINT(1) NOT NULL DEFAULT 0 AFTER is_sold",
+        "moderation_reason" => "VARCHAR(500) NOT NULL DEFAULT '' AFTER is_hidden",
+    ];
+    foreach ($productColumns as $column => $definition) {
+        if ($conn->query("SHOW COLUMNS FROM products LIKE '$column'")->num_rows === 0) {
+            try {
+                $conn->query("ALTER TABLE products ADD COLUMN `$column` $definition");
+            } catch (mysqli_sql_exception $e) {
+                if ($e->getCode() !== 1060) {
+                    throw $e;
+                }
+            }
+        }
+    }
+
+    $conn->query("CREATE TABLE IF NOT EXISTS moderation_reports (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        reporter_id INT NOT NULL,
+        target_type ENUM('user', 'product', 'transaction') NOT NULL,
+        target_id INT NOT NULL,
+        reason VARCHAR(100) NOT NULL,
+        description TEXT NOT NULL,
+        status ENUM('new', 'in_review', 'resolved', 'rejected') NOT NULL DEFAULT 'new',
+        assigned_to INT DEFAULT NULL,
+        resolution TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_reports_status_created (status, created_at),
+        INDEX idx_reports_target (target_type, target_id),
+        FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
+    )");
+    $conn->query("CREATE TABLE IF NOT EXISTS admin_audit_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        actor_id INT NOT NULL,
+        action VARCHAR(80) NOT NULL,
+        target_type VARCHAR(40) NOT NULL,
+        target_id INT NOT NULL,
+        details TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_audit_created (created_at),
+        INDEX idx_audit_target (target_type, target_id),
+        FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
+    )");
+    $ensured = true;
+}
+
+function record_admin_action(mysqli $conn, int $actorId, string $action, string $targetType, int $targetId, string $details): void
+{
+    $stmt = $conn->prepare("INSERT INTO admin_audit_logs (actor_id, action, target_type, target_id, details) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("issis", $actorId, $action, $targetType, $targetId, $details);
+    $stmt->execute();
+}
+
 function is_logged_in(): bool
 {
     return isset($_SESSION["user_id"]);
@@ -305,6 +403,7 @@ function require_login(): void
 
 function current_user(mysqli $conn): ?array
 {
+    ensure_admin_features($conn);
     if (!is_logged_in()) {
         return null;
     }
@@ -319,7 +418,14 @@ function current_user(mysqli $conn): ?array
     $stmt->bind_param("i", $_SESSION["user_id"]);
     $stmt->execute();
     $result = $stmt->get_result();
-    return $result->fetch_assoc() ?: null;
+    $user = $result->fetch_assoc() ?: null;
+    if ($user && (int)($user["is_active"] ?? 1) !== 1) {
+        $_SESSION = [];
+        session_destroy();
+        header("Location: login.php?disabled=1");
+        exit;
+    }
+    return $user;
 }
 
 function campus_locations(): array
@@ -345,6 +451,10 @@ function is_verified_student_email(string $email): bool
 
 function redirect_dashboard(string $role): void
 {
+    if (in_array($role, ["admin", "staff"], true)) {
+        header("Location: dashboard_admin.php");
+        exit;
+    }
     if ($role === "seller") {
         header("Location: dashboard_seller.php");
         exit;

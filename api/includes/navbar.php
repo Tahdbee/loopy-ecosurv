@@ -1,21 +1,29 @@
 <?php
 $currentPage = basename($_SERVER["PHP_SELF"]);
-$dashboardPage = $user["role"] === "seller" ? "dashboard_seller.php" : "dashboard_buyer.php";
+$dashboardPage = in_array($user["role"], ["admin", "staff"], true)
+    ? "dashboard_admin.php"
+    : ($user["role"] === "seller" ? "dashboard_seller.php" : "dashboard_buyer.php");
 $navItems = [
     ["label" => "Explore", "href" => "index.php", "active" => in_array($currentPage, ["index.php", "product_detail.php", "seller_profile.php"], true)],
     ["label" => "Favorites", "href" => "favorites.php", "active" => $currentPage === "favorites.php"],
     ["label" => "Messages", "href" => "messages.php", "active" => in_array($currentPage, ["messages.php", "chat.php"], true)],
-    ["label" => "Dashboard", "href" => $dashboardPage, "active" => in_array($currentPage, ["dashboard_buyer.php", "dashboard_seller.php"], true)],
+    ["label" => "Dashboard", "href" => $dashboardPage, "active" => in_array($currentPage, ["dashboard_buyer.php", "dashboard_seller.php", "dashboard_admin.php"], true)],
 ];
 if ($user["role"] === "seller") {
     $navItems[] = ["label" => "Upload product", "href" => "upload_product.php", "active" => $currentPage === "upload_product.php"];
     $navItems[] = ["label" => "Payment settings", "href" => "seller_payment_settings.php", "active" => $currentPage === "seller_payment_settings.php"];
 }
+if (in_array($user["role"], ["admin", "staff"], true)) {
+    $navItems = [
+        ["label" => "Dashboard", "href" => $dashboardPage, "active" => $currentPage === "dashboard_admin.php"],
+        ["label" => "Explore", "href" => "index.php", "active" => $currentPage === "index.php"],
+    ];
+}
 ?>
 <header class="looply-header">
     <nav class="looply-nav-shell" aria-label="Main navigation">
         <a href="index.php" class="looply-nav-logo" aria-label="LOOPLY home">
-            <img src="/assets/img/looplylogo.png" alt="">
+            <img src="<?= e(asset_url('assets/img/looplylogo.png')) ?>" alt="">
         </a>
         <div class="looply-nav-links">
             <?php foreach ($navItems as $item): ?>

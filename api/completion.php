@@ -192,7 +192,7 @@ if ($step === "order_created" && $itemId > 0) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($content["title"]) ?> | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>

@@ -6,7 +6,7 @@ $categories = ["Books", "Electronics", "Dorm Items", "Fashion", "Study Supplies"
 $search = trim($_GET["q"] ?? "");
 $category = trim($_GET["category"] ?? "");
 
-$sql = "SELECT p.*, u.full_name seller_name, u.faculty, u.major FROM products p JOIN users u ON p.seller_id = u.id WHERE p.is_sold = 0";
+$sql = "SELECT p.*, u.full_name seller_name, u.faculty, u.major FROM products p JOIN users u ON p.seller_id = u.id WHERE p.is_sold = 0 AND p.is_hidden = 0 AND u.is_active = 1";
 $params = [];
 $types = "";
 if ($search !== "") {
@@ -36,7 +36,7 @@ $products = $stmt->get_result();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marketplace | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>

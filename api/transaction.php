@@ -9,7 +9,7 @@ if (!$productId) {
     die("Invalid product.");
 }
 
-$pq = $conn->prepare("SELECT p.*, u.id seller_user_id, u.payment_instructions, u.payment_qr_image FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = ?");
+$pq = $conn->prepare("SELECT p.*, u.id seller_user_id, u.payment_instructions, u.payment_qr_image FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = ? AND p.is_hidden = 0 AND u.is_active = 1");
 $pq->bind_param("i", $productId);
 $pq->execute();
 $product = $pq->get_result()->fetch_assoc();
@@ -95,7 +95,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transaction | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>

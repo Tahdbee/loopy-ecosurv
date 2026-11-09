@@ -3,8 +3,8 @@ require_once "includes/config.php";
 require_login();
 $user = current_user($conn);
 $productId = (int)($_GET["id"] ?? 0);
-$stmt = $conn->prepare("SELECT p.*, u.full_name seller_name, u.faculty, u.major, u.id seller_user_id FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = ?");
-$stmt->bind_param("i", $productId);
+$stmt = $conn->prepare("SELECT p.*, u.full_name seller_name, u.faculty, u.major, u.id seller_user_id FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = ? AND (p.is_hidden = 0 OR p.seller_id = ? OR ? = 'admin' OR ? = 'staff') AND (u.is_active = 1 OR p.seller_id = ? OR ? = 'admin' OR ? = 'staff')");
+$stmt->bind_param("iississ", $productId, $user["id"], $user["role"], $user["role"], $user["id"], $user["role"], $user["role"]);
 $stmt->execute();
 $product = $stmt->get_result()->fetch_assoc();
 if (!$product) {
@@ -14,7 +14,7 @@ $recommendationsQuery = $conn->prepare(
     "SELECT p.id, p.name, p.category, p.price, p.image1, u.full_name seller_name
      FROM products p
      JOIN users u ON u.id = p.seller_id
-     WHERE p.category = ? AND p.id <> ? AND p.is_sold = 0 AND p.seller_id <> ?
+     WHERE p.category = ? AND p.id <> ? AND p.is_sold = 0 AND p.is_hidden = 0 AND u.is_active = 1 AND p.seller_id <> ?
      ORDER BY p.created_at DESC
      LIMIT 4"
 );
@@ -54,7 +54,7 @@ if (isset($_POST["favorite"]) && $isOwnProduct) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($product["name"]) ?> | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>
@@ -100,6 +100,13 @@ if (isset($_POST["favorite"]) && $isOwnProduct) {
                     </form>
                 <?php endif; ?>
             </div>
+            <?php if (!$isOwnProduct && !in_array($user["role"], ["admin", "staff"], true)): ?>
+                <div class="mt-4 flex flex-wrap gap-3 text-sm">
+                    <a class="font-semibold text-red-700 hover:underline" href="report.php?type=product&amp;id=<?= $productId ?>">Report listing</a>
+                    <a class="font-semibold text-red-700 hover:underline" href="report.php?type=user&amp;id=<?= (int)$product["seller_user_id"] ?>">Report seller</a>
+                </div>
+            <?php endif; ?>
+            <?php if (isset($_GET["reported"])): ?><p role="status" class="mt-3 text-sm text-emerald-700">Thanks. Your report was submitted for review.</p><?php endif; ?>
             <?php if ($favoriteMessage): ?><p role="status" class="mt-3 text-sm text-emerald-700"><?= e($favoriteMessage) ?></p><?php endif; ?>
         </div>
     </section>

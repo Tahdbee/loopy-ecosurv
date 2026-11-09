@@ -39,7 +39,7 @@ $latestConversation = $conversationRows[0] ?? null;
 ?>
 <!doctype html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Messages | LOOPLY</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="/assets/css/app.css"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Messages | LOOPLY</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>"></head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>
 <main class="messages-workspace mx-auto max-w-7xl p-4">

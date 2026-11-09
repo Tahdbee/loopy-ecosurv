@@ -6,13 +6,15 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(120) NOT NULL,
     email VARCHAR(120) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('buyer', 'seller') NOT NULL DEFAULT 'buyer',
+    role ENUM('buyer', 'seller', 'staff', 'admin') NOT NULL DEFAULT 'buyer',
     faculty VARCHAR(120) DEFAULT '',
     major VARCHAR(120) DEFAULT '',
     profile_image VARCHAR(255) NOT NULL DEFAULT '',
     payment_instructions VARCHAR(5000) NOT NULL DEFAULT '',
     payment_qr_image VARCHAR(255) NOT NULL DEFAULT '',
     is_verified TINYINT(1) NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    suspension_reason VARCHAR(500) NOT NULL DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -28,6 +30,8 @@ CREATE TABLE IF NOT EXISTS products (
     image2 VARCHAR(255) DEFAULT '',
     image3 VARCHAR(255) DEFAULT '',
     is_sold TINYINT(1) NOT NULL DEFAULT 0,
+    is_hidden TINYINT(1) NOT NULL DEFAULT 0,
+    moderation_reason VARCHAR(500) NOT NULL DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -99,4 +103,35 @@ CREATE TABLE IF NOT EXISTS notifications (
     is_read TINYINT(1) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS moderation_reports (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    reporter_id INT NOT NULL,
+    target_type ENUM('user', 'product', 'transaction') NOT NULL,
+    target_id INT NOT NULL,
+    reason VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    status ENUM('new', 'in_review', 'resolved', 'rejected') NOT NULL DEFAULT 'new',
+    assigned_to INT DEFAULT NULL,
+    resolution TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_reports_status_created (status, created_at),
+    INDEX idx_reports_target (target_type, target_id),
+    FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    actor_id INT NOT NULL,
+    action VARCHAR(80) NOT NULL,
+    target_type VARCHAR(40) NOT NULL,
+    target_id INT NOT NULL,
+    details TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_audit_created (created_at),
+    INDEX idx_audit_target (target_type, target_id),
+    FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
 );

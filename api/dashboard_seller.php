@@ -5,7 +5,7 @@ ensure_transaction_proof_columns($conn);
 $user = current_user($conn);
 $conn->query("CREATE TABLE IF NOT EXISTS notifications (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, message VARCHAR(255) NOT NULL, link VARCHAR(255) DEFAULT '', is_read TINYINT(1) NOT NULL DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)");
 if ($user["role"] !== "seller") {
-    redirect_dashboard("buyer");
+    redirect_dashboard($user["role"]);
 }
 
 $focusedOrderId = (int)($_GET["order_id"] ?? 0);
@@ -164,7 +164,7 @@ $unreadNotifications = (int)($notifCount->get_result()->fetch_assoc()["total"] ?
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seller Dashboard | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
 </head>
 <body class="bg-slate-50">
 <?php include "includes/navbar.php"; ?>
@@ -255,6 +255,7 @@ $unreadNotifications = (int)($notifCount->get_result()->fetch_assoc()["total"] ?
                         <?php endif; ?>
                     </td>
                     <td class="min-w-56 space-y-2">
+                        <a href="report.php?type=transaction&amp;id=<?= (int)$t["id"] ?>" class="inline-block text-xs font-semibold text-red-700 hover:underline">Report transaction</a>
                         <?php if ($t["payment_flow"] === "gopay_qr" && $t["buyer_payment_proof"]): ?>
                             <a class="block text-orange-600 underline" href="<?= e(protected_media_url($t["buyer_payment_proof"])) ?>" target="_blank" rel="noopener">View buyer payment receipt</a>
                         <?php endif; ?>

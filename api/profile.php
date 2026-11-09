@@ -72,7 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     } elseif (isset($_POST["new_role"])) {
         $newRole = $_POST["new_role"];
-        if (in_array($newRole, ["buyer", "seller"], true)) {
+        if (in_array($user["role"], ["buyer", "seller"], true) && in_array($newRole, ["buyer", "seller"], true)) {
             $stmt = $conn->prepare("UPDATE users SET role = ? WHERE id = ?");
             $stmt->bind_param("si", $newRole, $user["id"]);
             $stmt->execute();
@@ -94,7 +94,7 @@ $reviewStats = $avg->get_result()->fetch_assoc();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile &amp; Settings | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>
@@ -166,7 +166,7 @@ $reviewStats = $avg->get_result()->fetch_assoc();
             </div>
         </div>
         <div class="profile-account-settings">
-            <form method="post" class="profile-role-setting">
+            <?php if (in_array($user["role"], ["buyer", "seller"], true)): ?><form method="post" class="profile-role-setting">
                 <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                 <div>
                     <label for="new_role">Account role</label>
@@ -177,7 +177,7 @@ $reviewStats = $avg->get_result()->fetch_assoc();
                     <option value="seller" <?= $user["role"] === "seller" ? "selected" : "" ?>>Seller</option>
                 </select>
                 <button type="submit" class="profile-outline-button">Update role</button>
-            </form>
+            </form><?php endif; ?>
         </div>
     </section>
 

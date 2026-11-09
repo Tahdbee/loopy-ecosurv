@@ -6,7 +6,7 @@ ensure_seller_payment_columns($conn);
 ensure_seller_payment_columns($conn);
 $user = current_user($conn);
 if ($user["role"] !== "buyer") {
-    redirect_dashboard("seller");
+    redirect_dashboard($user["role"]);
 }
 
 $message = "";
@@ -152,7 +152,7 @@ foreach ($transactionRows as $transactionRow) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buyer Dashboard | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
 </head>
 <body class="bg-slate-50">
 <?php include "includes/navbar.php"; ?>
@@ -212,6 +212,7 @@ foreach ($transactionRows as $transactionRow) {
                     <td><?= e($t["meetup_location"]) ?><br><span class="text-xs text-slate-500"><?= e($t["meetup_time"] ?: "-") ?></span></td>
                     <td><?= e($t["payment_status"]) ?></td>
                     <td class="min-w-52">
+                        <?php if ($t["payment_status"] === "Pending" && (int)$t["seller_accepted"] === 0): ?><a href="edit_transaction.php?id=<?= (int)$t["id"] ?>" class="mb-2 mr-3 inline-block text-xs font-semibold text-blue-700 hover:underline">Edit meet-up</a><?php endif; ?><a href="report.php?type=transaction&amp;id=<?= (int)$t["id"] ?>" class="mb-2 inline-block text-xs font-semibold text-red-700 hover:underline">Report transaction</a>
                         <?php if ($t["payment_flow"] === "gopay_qr" && $t["payment_status"] !== "Completed" && $t["payment_status"] !== "Cancelled"): ?>
                             <?php if ($t["buyer_payment_proof"]): ?>
                                 <a class="text-orange-600 underline" href="<?= e(protected_media_url($t["buyer_payment_proof"])) ?>" target="_blank" rel="noopener">View uploaded receipt</a>

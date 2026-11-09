@@ -4,8 +4,8 @@ require_login();
 $user = current_user($conn);
 $sellerId = (int)($_GET["id"] ?? 0);
 
-$sellerQuery = $conn->prepare("SELECT id, full_name, faculty, major, profile_image, created_at FROM users WHERE id = ? AND role = 'seller'");
-$sellerQuery->bind_param("i", $sellerId);
+$sellerQuery = $conn->prepare("SELECT id, full_name, faculty, major, profile_image, created_at FROM users WHERE id = ? AND role = 'seller' AND (is_active = 1 OR ? = 'admin' OR ? = 'staff')");
+$sellerQuery->bind_param("iss", $sellerId, $user["role"], $user["role"]);
 $sellerQuery->execute();
 $seller = $sellerQuery->get_result()->fetch_assoc();
 if (!$seller) {
@@ -67,11 +67,11 @@ $productsQuery = $conn->prepare(
      LEFT JOIN transactions t
        ON t.product_id = p.id AND t.seller_id = p.seller_id AND t.payment_status = 'Completed'
      LEFT JOIN reviews r ON r.transaction_id = t.id AND r.reviewee_id = p.seller_id
-     WHERE p.seller_id = ?
+     WHERE p.seller_id = ? AND (p.is_hidden = 0 OR p.seller_id = ? OR ? = 'admin' OR ? = 'staff')
      GROUP BY p.id
      ORDER BY p.created_at DESC"
 );
-$productsQuery->bind_param("i", $sellerId);
+$productsQuery->bind_param("iiss", $sellerId, $user["id"], $user["role"], $user["role"]);
 $productsQuery->execute();
 $products = $productsQuery->get_result();
 
@@ -113,11 +113,12 @@ $roundedAverage = (int)round((float)$reviewStats["average_rating"]);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($seller["full_name"]) ?> | LOOPLY Seller</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
     <?php include "includes/navbar.php"; ?>
     <main class="max-w-7xl mx-auto p-4 space-y-8">
+        <?php if (isset($_GET["reported"])): ?><p role="status" class="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">Thanks. Your report was submitted for review.</p><?php endif; ?>
         <section class="seller-hero bg-white rounded-2xl shadow-sm p-6 md:p-8">
             <div class="seller-hero-profile">
                 <div class="seller-profile-avatar" aria-hidden="true">
@@ -136,6 +137,9 @@ $roundedAverage = (int)round((float)$reviewStats["average_rating"]);
                         <span class="font-semibold"><?= number_format((float)$reviewStats["average_rating"], 1) ?> / 5</span>
                         <span class="text-sm text-slate-500"><?= (int)$reviewStats["review_count"] ?> <?= (int)$reviewStats["review_count"] === 1 ? "review" : "reviews" ?></span>
                     </div>
+                    <?php if (!in_array($user["role"], ["admin", "staff"], true) && (int)$user["id"] !== (int)$seller["id"]): ?>
+                        <a class="mt-4 inline-block text-sm font-semibold text-red-700 hover:underline" href="report.php?type=user&amp;id=<?= (int)$seller["id"] ?>">Report this seller</a>
+                    <?php endif; ?>
                 </div>
             </div>
         </section>
