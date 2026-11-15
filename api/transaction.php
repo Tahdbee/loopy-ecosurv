@@ -4,12 +4,13 @@ require_login();
 ensure_transaction_proof_columns($conn);
 ensure_seller_payment_columns($conn);
 $user = current_user($conn);
+require_marketplace_access($user);
 $productId = (int)($_GET["product_id"] ?? 0);
 if (!$productId) {
     die("Invalid product.");
 }
 
-$pq = $conn->prepare("SELECT p.*, u.id seller_user_id, u.payment_instructions, u.payment_qr_image FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = ?");
+$pq = $conn->prepare("SELECT p.*, u.id seller_user_id, u.payment_instructions, u.payment_qr_image FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = ? AND p.is_blocked = 0 AND p.is_deleted = 0 AND u.is_blocked = 0");
 $pq->bind_param("i", $productId);
 $pq->execute();
 $product = $pq->get_result()->fetch_assoc();
@@ -17,7 +18,7 @@ if (!$product) {
     die("Product not found.");
 }
 if ((int)$product["seller_user_id"] === (int)$user["id"]) {
-    header("Location: product_detail.php?id=" . $productId);
+    header("Location: " . app_page_url("product_detail.php") . "?id=" . $productId);
     exit;
 }
 
@@ -62,7 +63,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } elseif ($message === "") {
         $conn->begin_transaction();
         try {
-            $lock = $conn->prepare("UPDATE products SET is_sold = 1 WHERE id = ? AND is_sold = 0 AND seller_id <> ?");
+            $lock = $conn->prepare("UPDATE products SET is_sold = 1 WHERE id = ? AND is_sold = 0 AND is_blocked = 0 AND is_deleted = 0 AND seller_id <> ?");
             $lock->bind_param("ii", $productId, $user["id"]);
             $lock->execute();
             if ($lock->affected_rows !== 1) {
@@ -95,7 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transaction | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url("assets/css/app.css")) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>

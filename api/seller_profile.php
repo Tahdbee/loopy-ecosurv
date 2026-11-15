@@ -2,9 +2,10 @@
 require_once "includes/config.php";
 require_login();
 $user = current_user($conn);
+require_marketplace_access($user);
 $sellerId = (int)($_GET["id"] ?? 0);
 
-$sellerQuery = $conn->prepare("SELECT id, full_name, faculty, major, profile_image, created_at FROM users WHERE id = ? AND role = 'seller'");
+$sellerQuery = $conn->prepare("SELECT id, full_name, faculty, major, profile_image, created_at FROM users WHERE id = ? AND role = 'seller' AND is_blocked = 0");
 $sellerQuery->bind_param("i", $sellerId);
 $sellerQuery->execute();
 $seller = $sellerQuery->get_result()->fetch_assoc();
@@ -67,7 +68,7 @@ $productsQuery = $conn->prepare(
      LEFT JOIN transactions t
        ON t.product_id = p.id AND t.seller_id = p.seller_id AND t.payment_status = 'Completed'
      LEFT JOIN reviews r ON r.transaction_id = t.id AND r.reviewee_id = p.seller_id
-     WHERE p.seller_id = ?
+     WHERE p.seller_id = ? AND p.is_blocked = 0 AND p.is_deleted = 0
      GROUP BY p.id
      ORDER BY p.created_at DESC"
 );
@@ -113,7 +114,7 @@ $roundedAverage = (int)round((float)$reviewStats["average_rating"]);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($seller["full_name"]) ?> | LOOPLY Seller</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url("assets/css/app.css")) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
     <?php include "includes/navbar.php"; ?>
@@ -136,6 +137,9 @@ $roundedAverage = (int)round((float)$reviewStats["average_rating"]);
                         <span class="font-semibold"><?= number_format((float)$reviewStats["average_rating"], 1) ?> / 5</span>
                         <span class="text-sm text-slate-500"><?= (int)$reviewStats["review_count"] ?> <?= (int)$reviewStats["review_count"] === 1 ? "review" : "reviews" ?></span>
                     </div>
+                    <?php if ((int)$user["id"] !== (int)$seller["id"]): ?>
+                        <a href="report.php?type=account&amp;id=<?= (int)$seller["id"] ?>" class="mt-4 inline-block text-sm font-semibold text-red-700 hover:text-red-800">Report account</a>
+                    <?php endif; ?>
                 </div>
             </div>
         </section>

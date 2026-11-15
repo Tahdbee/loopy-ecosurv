@@ -1,6 +1,6 @@
 <footer class="brand-footer">
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <a href="index.php" class="brand-wordmark">looply<span>.</span></a>
+        <a href="<?= e(app_page_url("index.php")) ?>" class="brand-wordmark">looply<span>.</span></a>
         <p>By Students. For Students.</p>
         <p>&copy; <?= date("Y") ?> LOOPLY</p>
     </div>

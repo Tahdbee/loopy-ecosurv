@@ -27,7 +27,7 @@ if (preg_match("#^/(assets|uploads)/(.*)$#", $path, $matches)) {
 }
 
 $page = $path === "/" ? "index.php" : ltrim($path, "/");
-if (!preg_match("#^[A-Za-z0-9_-]+\\.php$#", $page)) {
+if ($page !== "admin/admin-dashboard.php" && !preg_match("#^[A-Za-z0-9_-]+\\.php$#", $page)) {
     http_response_code(404);
     exit;
 }

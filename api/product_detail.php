@@ -2,19 +2,21 @@
 require_once "includes/config.php";
 require_login();
 $user = current_user($conn);
+require_marketplace_access($user);
 $productId = (int)($_GET["id"] ?? 0);
-$stmt = $conn->prepare("SELECT p.*, u.full_name seller_name, u.faculty, u.major, u.id seller_user_id FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = ?");
+$stmt = $conn->prepare("SELECT p.*, u.full_name seller_name, u.faculty, u.major, u.id seller_user_id FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = ? AND p.is_blocked = 0 AND p.is_deleted = 0 AND u.is_blocked = 0");
 $stmt->bind_param("i", $productId);
 $stmt->execute();
 $product = $stmt->get_result()->fetch_assoc();
 if (!$product) {
     die("Product not found.");
 }
+$productImages = get_product_images($conn, $productId);
 $recommendationsQuery = $conn->prepare(
     "SELECT p.id, p.name, p.category, p.price, p.image1, u.full_name seller_name
      FROM products p
      JOIN users u ON u.id = p.seller_id
-     WHERE p.category = ? AND p.id <> ? AND p.is_sold = 0 AND p.seller_id <> ?
+     WHERE p.category = ? AND p.id <> ? AND p.is_sold = 0 AND p.is_blocked = 0 AND p.is_deleted = 0 AND u.is_blocked = 0 AND p.seller_id <> ?
      ORDER BY p.created_at DESC
      LIMIT 4"
 );
@@ -54,7 +56,7 @@ if (isset($_POST["favorite"]) && $isOwnProduct) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($product["name"]) ?> | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url("assets/css/app.css")) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>
@@ -62,14 +64,16 @@ if (isset($_POST["favorite"]) && $isOwnProduct) {
     <section class="product-detail-shell grid gap-7 rounded-3xl border border-white/80 bg-white p-4 shadow-xl md:grid-cols-2 md:p-7">
         <div class="product-detail-gallery">
             <div class="product-detail-main-image">
-                <img src="<?= e(asset_url($product["image1"])) ?>" alt="<?= e($product["name"]) ?>">
-                <span class="landing-product-category"><?= e($product["category"]) ?></span>
+                <img src="<?= e(asset_url($productImages[0] ?? "")) ?>" alt="<?= e($product["name"]) ?>">
+                <span class="product-detail-category"><?= e($product["category"]) ?></span>
             </div>
-            <div class="product-detail-thumbnails">
-                <img src="<?= e(asset_url($product["image1"])) ?>" alt="<?= e($product["name"]) ?>">
-                <img src="<?= e($product["image2"] ?: $product["image1"]) ?>" alt="<?= e($product["name"]) ?>">
-                <img src="<?= e($product["image3"] ?: $product["image1"]) ?>" alt="<?= e($product["name"]) ?>">
-            </div>
+            <?php if (count($productImages) > 1): ?>
+                <div class="product-detail-thumbnails">
+                    <?php foreach (array_slice($productImages, 1) as $image): ?>
+                        <img src="<?= e(asset_url($image)) ?>" alt="<?= e($product["name"]) ?>">
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
         <div class="product-detail-copy">
             <p class="landing-section-kicker">A LOOPLY find for you</p>
@@ -101,6 +105,15 @@ if (isset($_POST["favorite"]) && $isOwnProduct) {
                 <?php endif; ?>
             </div>
             <?php if ($favoriteMessage): ?><p role="status" class="mt-3 text-sm text-emerald-700"><?= e($favoriteMessage) ?></p><?php endif; ?>
+            <?php if (!$isOwnProduct): ?>
+                <div class="product-detail-report-row">
+                    <a class="product-detail-report" href="report.php?type=product&amp;id=<?= $productId ?>" aria-label="Report listing" title="Report listing">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M5 21V5.5c0-.83.67-1.5 1.5-1.5H19l-2.5 4L19 12H6.5A1.5 1.5 0 0 0 5 13.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </a>
+                </div>
+            <?php endif; ?>
         </div>
     </section>
 

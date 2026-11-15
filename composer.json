@@ -1,0 +1,13 @@
+{
+  "name": "loopy/ecosurv",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "phpoffice/phpspreadsheet": "^2.2",
+    "smalot/pdfparser": "^2.12"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  }
+}

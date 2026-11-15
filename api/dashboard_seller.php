@@ -3,6 +3,7 @@ require_once "includes/config.php";
 require_login();
 ensure_transaction_proof_columns($conn);
 $user = current_user($conn);
+require_marketplace_access($user);
 $conn->query("CREATE TABLE IF NOT EXISTS notifications (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, message VARCHAR(255) NOT NULL, link VARCHAR(255) DEFAULT '', is_read TINYINT(1) NOT NULL DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)");
 if ($user["role"] !== "seller") {
     redirect_dashboard("buyer");
@@ -29,16 +30,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["clear_notifications"]
     $clear = $conn->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?");
     $clear->bind_param("i", $user["id"]);
     $clear->execute();
-    header("Location: dashboard_seller.php");
+    header("Location: " . app_page_url("dashboard_seller.php"));
     exit;
 }
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["delete"])) {
     verify_csrf_token();
     $pid = (int)$_POST["delete"];
-    $stmt = $conn->prepare("DELETE FROM products WHERE id = ? AND seller_id = ?");
+    $stmt = $conn->prepare("DELETE FROM products WHERE id = ? AND seller_id = ? AND is_blocked = 0 AND is_deleted = 0");
     $stmt->bind_param("ii", $pid, $user["id"]);
     $stmt->execute();
-    header("Location: dashboard_seller.php");
+    header("Location: " . app_page_url("dashboard_seller.php"));
     exit;
 }
 
@@ -86,7 +87,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"], $_POST["tid
         redirect_completion($completedAction, $tid);
     }
     if ($message === "") {
-        header("Location: dashboard_seller.php");
+        header("Location: " . app_page_url("dashboard_seller.php"));
         exit;
     }
 }
@@ -136,7 +137,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["complete"])) {
     if ($stmt->affected_rows === 1) {
         redirect_completion("seller_marked_complete", $tid);
     }
-    header("Location: dashboard_seller.php");
+    header("Location: " . app_page_url("dashboard_seller.php"));
     exit;
 }
 
@@ -164,7 +165,7 @@ $unreadNotifications = (int)($notifCount->get_result()->fetch_assoc()["total"] ?
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seller Dashboard | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url("assets/css/app.css")) ?>">
 </head>
 <body class="bg-slate-50">
 <?php include "includes/navbar.php"; ?>
@@ -213,10 +214,16 @@ $unreadNotifications = (int)($notifCount->get_result()->fetch_assoc()["total"] ?
                     <img src="<?= e(asset_url($p["image1"])) ?>" alt="" class="h-32 w-full object-cover rounded-lg">
                     <p class="font-semibold mt-2"><?= e($p["name"]) ?></p>
                     <p class="text-sm text-slate-500">Rp <?= number_format((float)$p["price"], 0, ",", ".") ?></p>
-                    <div class="space-x-2">
-                        <a href="edit_product.php?id=<?= (int)$p["id"] ?>" class="text-orange-600 text-sm">Edit</a>
-                        <form method="post" class="inline"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="delete" value="<?= (int)$p["id"] ?>"><button class="text-red-600 text-sm">Delete</button></form>
-                    </div>
+                    <?php if ((int)$p["is_deleted"]): ?>
+                        <p class="mt-2 text-sm font-semibold text-red-700">Removed by staff</p>
+                    <?php elseif ((int)$p["is_blocked"]): ?>
+                        <p class="mt-2 text-sm font-semibold text-amber-700">Blocked by staff</p>
+                    <?php else: ?>
+                        <div class="space-x-2">
+                            <a href="edit_product.php?id=<?= (int)$p["id"] ?>" class="text-orange-600 text-sm">Edit</a>
+                            <form method="post" class="inline" onsubmit="return confirm(<?= e(json_encode("Are you sure you want to delete \"" . $p["name"] . "\"?", JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP)) ?>);"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="delete" value="<?= (int)$p["id"] ?>"><button type="submit" class="text-red-600 text-sm">Delete</button></form>
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php endwhile; ?>
         </div>

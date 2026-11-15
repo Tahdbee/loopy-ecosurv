@@ -12,44 +12,12 @@ $faculty = "";
 $major = "";
 $fullName = "";
 $email = "";
-$role = "buyer";
+$requestedRole = $_GET["role"] ?? "buyer";
+$role = is_string($requestedRole) && in_array($requestedRole, ["buyer", "seller"], true)
+    ? $requestedRole
+    : "buyer";
 $csrfToken = csrf_token();
-$facultyMajors = [
-    "Faculty of Business" => [
-        "Accounting",
-        "Business Administration",
-        "Management",
-        "Actuarial Science",
-        "Agribusiness",
-    ],
-    "Faculty of Artificial Intelligence and Smart Manufacturing" => [
-        "Informatics",
-        "Information System",
-    ],
-    "Faculty of Engineering" => [
-        "Mechanical Engineering",
-        "Electrical Engineering",
-        "Industrial Engineering",
-        "Environmental Engineering",
-        "Civil Engineering",
-    ],
-    "Faculty of Social Science and Education" => [
-        "International Relations",
-        "Communication (Communication Science)",
-        "Elementary Teacher Education",
-    ],
-    "Faculty of Art, Design, and Architecture" => [
-        "Interior Design",
-        "Architecture",
-        "Visual Communication Design",
-    ],
-    "Faculty of Law" => [
-        "Law",
-    ],
-    "Faculty of Medicine" => [
-        "Medicine",
-    ],
-];
+$facultyMajors = faculty_majors();
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     verify_csrf_token();
@@ -86,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $stmt->bind_param("ssssssi", $fullName, $email, $hash, $role, $faculty, $major, $verified);
             try {
                 if ($stmt->execute()) {
-                    header("Location: login.php?registered=1");
+                    header("Location: " . app_page_url("login.php") . "?registered=1");
                     exit;
                 }
             } catch (mysqli_sql_exception $exception) {
@@ -103,7 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 ?>
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Register | LOOPLY</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="/assets/css/app.css"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Register | LOOPLY</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="<?= e(asset_url("assets/css/app.css")) ?>"></head>
 <body class="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4"><div class="w-full max-w-lg bg-white rounded-2xl shadow-lg p-6"><h1 class="brand-wordmark text-2xl">Create your looply<span>.</span> account</h1><p class="brand-tagline text-sm mt-1">Discover More. Shop Different.</p><?php if ($error): ?><div role="alert" class="mt-4 bg-red-50 text-red-700 px-3 py-2 rounded-lg text-sm"><?= e($error) ?></div><?php endif; ?><form method="post" class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4"><input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>"><div class="md:col-span-2"><label class="text-sm font-medium">Full Name</label><input name="full_name" value="<?= e($fullName) ?>" required minlength="2" maxlength="120" class="mt-1 w-full border rounded-xl px-3 py-2"></div><div class="md:col-span-2"><label class="text-sm font-medium">University Email</label><input type="email" name="email" value="<?= e($email) ?>" required class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="you@student.president.ac.id"></div><div><label for="faculty" class="text-sm font-medium">Faculty</label><select id="faculty" name="faculty" required class="mt-1 w-full border rounded-xl px-3 py-2"><option value="">Select a faculty</option><?php foreach ($facultyMajors as $facultyOption => $majorOptions): ?><option value="<?= e($facultyOption) ?>" <?= $faculty === $facultyOption ? "selected" : "" ?>><?= e($facultyOption) ?></option><?php endforeach; ?></select></div><div><label for="major" class="text-sm font-medium">Major</label><select id="major" name="major" required class="mt-1 w-full border rounded-xl px-3 py-2"><option value="">Select a major</option><?php foreach ($facultyMajors[$faculty] ?? [] as $majorOption): ?><option value="<?= e($majorOption) ?>" <?= $major === $majorOption ? "selected" : "" ?>><?= e($majorOption) ?></option><?php endforeach; ?></select></div><div><label class="text-sm font-medium">Password</label><input type="password" name="password" required minlength="8" maxlength="72" autocomplete="new-password" class="mt-1 w-full border rounded-xl px-3 py-2"></div><div><label class="text-sm font-medium">Role</label><select name="role" required class="mt-1 w-full border rounded-xl px-3 py-2"><option value="buyer" <?= $role === "buyer" ? "selected" : "" ?>>Buyer</option><option value="seller" <?= $role === "seller" ? "selected" : "" ?>>Seller</option></select></div><div class="md:col-span-2"><button class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2 font-semibold">Register</button></div></form><p class="text-sm mt-4">Already registered? <a href="login.php" class="text-blue-600 font-semibold">Login</a></p></div><script>
 const facultyMajors = <?= json_encode($facultyMajors, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 const facultySelect = document.getElementById("faculty");
