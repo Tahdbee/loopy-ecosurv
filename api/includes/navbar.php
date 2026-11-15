@@ -1,21 +1,31 @@
 <?php
 $currentPage = basename($_SERVER["PHP_SELF"]);
-$dashboardPage = $user["role"] === "seller" ? "dashboard_seller.php" : "dashboard_buyer.php";
-$navItems = [
-    ["label" => "Explore", "href" => "index.php", "active" => in_array($currentPage, ["index.php", "product_detail.php", "seller_profile.php"], true)],
-    ["label" => "Favorites", "href" => "favorites.php", "active" => $currentPage === "favorites.php"],
-    ["label" => "Messages", "href" => "messages.php", "active" => in_array($currentPage, ["messages.php", "chat.php"], true)],
-    ["label" => "Dashboard", "href" => $dashboardPage, "active" => in_array($currentPage, ["dashboard_buyer.php", "dashboard_seller.php"], true)],
-];
+$homeUrl = app_page_url("index.php");
+$profileUrl = app_page_url("profile.php") . "#profile";
+$logoutUrl = app_page_url("logout.php");
+$isStaff = in_array($user["role"], ["admin", "reviewer"], true);
+$dashboardPage = $isStaff
+    ? app_page_url("admin/admin-dashboard.php")
+    : app_page_url($user["role"] === "seller" ? "dashboard_seller.php" : "dashboard_buyer.php");
+$navItems = $user["role"] === "admin"
+    ? [["label" => "Admin dashboard", "href" => $dashboardPage, "active" => $currentPage === "admin-dashboard.php"]]
+    : ($user["role"] === "reviewer"
+        ? [["label" => "Report review", "href" => $dashboardPage, "active" => $currentPage === "admin-dashboard.php"]]
+        : [
+        ["label" => "Explore", "href" => $homeUrl, "active" => in_array($currentPage, ["index.php", "product_detail.php", "seller_profile.php"], true)],
+        ["label" => "Favorites", "href" => app_page_url("favorites.php"), "active" => $currentPage === "favorites.php"],
+        ["label" => "Messages", "href" => app_page_url("messages.php"), "active" => in_array($currentPage, ["messages.php", "chat.php"], true)],
+        ["label" => "Dashboard", "href" => $dashboardPage, "active" => in_array($currentPage, ["dashboard_buyer.php", "dashboard_seller.php"], true)],
+    ]);
 if ($user["role"] === "seller") {
-    $navItems[] = ["label" => "Upload product", "href" => "upload_product.php", "active" => $currentPage === "upload_product.php"];
-    $navItems[] = ["label" => "Payment settings", "href" => "seller_payment_settings.php", "active" => $currentPage === "seller_payment_settings.php"];
+    $navItems[] = ["label" => "Upload product", "href" => app_page_url("upload_product.php"), "active" => $currentPage === "upload_product.php"];
+    $navItems[] = ["label" => "Payment settings", "href" => app_page_url("seller_payment_settings.php"), "active" => $currentPage === "seller_payment_settings.php"];
 }
 ?>
 <header class="looply-header">
     <nav class="looply-nav-shell" aria-label="Main navigation">
-        <a href="index.php" class="looply-nav-logo" aria-label="LOOPLY home">
-            <img src="/assets/img/looplylogo.png" alt="">
+        <a href="<?= e($isStaff ? $dashboardPage : $homeUrl) ?>" class="looply-nav-logo" aria-label="LOOPLY home">
+            <img src="<?= e(asset_url("assets/img/looplylogo.png")) ?>" alt="">
         </a>
         <div class="looply-nav-links">
             <?php foreach ($navItems as $item): ?>
@@ -40,12 +50,14 @@ if ($user["role"] === "seller") {
                         <strong><?= e($user["full_name"] ?? "My account") ?></strong>
                         <span><?= e($user["email"] ?? "") ?></span>
                     </div>
-                    <a href="profile.php#profile">
-                        <span aria-hidden="true">♙</span>
-                        <span>Edit profile</span>
-                    </a>
+                    <?php if (!$isStaff): ?>
+                        <a href="<?= e($profileUrl) ?>">
+                            <span aria-hidden="true">♙</span>
+                            <span>Edit profile</span>
+                        </a>
+                    <?php endif; ?>
                     <div class="looply-account-menu-divider"></div>
-                    <a href="logout.php" class="looply-account-logout">
+                    <a href="<?= e($logoutUrl) ?>" class="looply-account-logout">
                         <span aria-hidden="true">↪</span>
                         <span>Log out</span>
                     </a>
@@ -58,8 +70,8 @@ if ($user["role"] === "seller") {
                 <?php foreach ($navItems as $item): ?>
                     <a href="<?= e($item["href"]) ?>" class="<?= $item["active"] ? "is-active" : "" ?>"><?= e($item["label"]) ?></a>
                 <?php endforeach; ?>
-                <a href="profile.php#profile">Edit profile</a>
-                <a href="logout.php">Log out</a>
+                <?php if (!$isStaff): ?><a href="<?= e($profileUrl) ?>">Edit profile</a><?php endif; ?>
+                <a href="<?= e($logoutUrl) ?>">Log out</a>
             </div>
         </details>
     </nav>

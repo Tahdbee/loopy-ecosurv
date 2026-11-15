@@ -2,10 +2,11 @@
 require_once "includes/config.php";
 require_login();
 $user = current_user($conn);
+require_marketplace_access($user);
 $productId = (int)($_GET["product_id"] ?? 0);
 $partnerId = (int)($_GET["partner_id"] ?? 0);
 $chatError = "";
-$productCheck = $conn->prepare("SELECT p.seller_id, p.name, p.image1, p.price, u.full_name seller_name FROM products p JOIN users u ON u.id = p.seller_id WHERE p.id = ?");
+$productCheck = $conn->prepare("SELECT p.seller_id, p.name, p.image1, p.price, u.full_name seller_name FROM products p JOIN users u ON u.id = p.seller_id WHERE p.id = ? AND p.is_blocked = 0 AND p.is_deleted = 0 AND u.is_blocked = 0");
 $productCheck->bind_param("i", $productId);
 $productCheck->execute();
 $chatProduct = $productCheck->get_result()->fetch_assoc();
@@ -54,7 +55,7 @@ if ($validConversation) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat with <?= e($partnerName ?: "seller") ?> | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url("assets/css/app.css")) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>

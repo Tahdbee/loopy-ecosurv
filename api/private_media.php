@@ -9,6 +9,7 @@ if (!is_string($relativePath) || !preg_match("#^(private|uploads)/(payment-proof
 }
 
 $user = current_user($conn);
+require_marketplace_access($user);
 $path = $conn->real_escape_string($relativePath);
 $userId = (int)$user["id"];
 $access = $conn->query(

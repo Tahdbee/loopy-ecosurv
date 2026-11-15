@@ -6,13 +6,15 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(120) NOT NULL,
     email VARCHAR(120) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('buyer', 'seller') NOT NULL DEFAULT 'buyer',
+    role ENUM('buyer', 'seller', 'admin', 'reviewer') NOT NULL DEFAULT 'buyer',
+    reviewer_previous_role ENUM('buyer', 'seller') DEFAULT NULL,
     faculty VARCHAR(120) DEFAULT '',
     major VARCHAR(120) DEFAULT '',
     profile_image VARCHAR(255) NOT NULL DEFAULT '',
     payment_instructions VARCHAR(5000) NOT NULL DEFAULT '',
     payment_qr_image VARCHAR(255) NOT NULL DEFAULT '',
     is_verified TINYINT(1) NOT NULL DEFAULT 0,
+    is_blocked TINYINT(1) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -28,9 +30,28 @@ CREATE TABLE IF NOT EXISTS products (
     image2 VARCHAR(255) DEFAULT '',
     image3 VARCHAR(255) DEFAULT '',
     is_sold TINYINT(1) NOT NULL DEFAULT 0,
+    is_blocked TINYINT(1) NOT NULL DEFAULT 0,
+    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS product_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    image_path VARCHAR(255) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    UNIQUE KEY product_image_path (product_id, image_path(191)),
+    KEY product_images_order (product_id, sort_order, id),
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+INSERT IGNORE INTO product_images (product_id, image_path, sort_order)
+SELECT id, image1, 0 FROM products WHERE image1 IS NOT NULL AND image1 <> '';
+INSERT IGNORE INTO product_images (product_id, image_path, sort_order)
+SELECT id, image2, 1 FROM products WHERE image2 IS NOT NULL AND image2 <> '';
+INSERT IGNORE INTO product_images (product_id, image_path, sort_order)
+SELECT id, image3, 2 FROM products WHERE image3 IS NOT NULL AND image3 <> '';
 
 CREATE TABLE IF NOT EXISTS transactions (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -99,4 +120,42 @@ CREATE TABLE IF NOT EXISTS notifications (
     is_read TINYINT(1) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS staff_notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    message VARCHAR(255) NOT NULL,
+    link VARCHAR(255) NOT NULL DEFAULT '',
+    is_read TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY staff_notifications_user_created (user_id, created_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS reports (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    reporter_id INT NOT NULL,
+    product_id INT DEFAULT NULL,
+    reported_user_id INT DEFAULT NULL,
+    reason ENUM('scam', 'prohibited_item', 'misleading_listing', 'harassment', 'other') NOT NULL,
+    details VARCHAR(2000) NOT NULL DEFAULT '',
+    status ENUM('pending', 'reviewed', 'actioned', 'dismissed') NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_product_report (reporter_id, product_id),
+    UNIQUE KEY unique_account_report (reporter_id, reported_user_id),
+    KEY reports_status_created (status, created_at),
+    FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS admin_documents (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    original_name VARCHAR(255) NOT NULL,
+    storage_path VARCHAR(255) NOT NULL,
+    uploaded_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY admin_documents_created (created_at),
+    FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE CASCADE
 );

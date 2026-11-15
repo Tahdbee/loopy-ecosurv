@@ -5,6 +5,7 @@ ensure_transaction_proof_columns($conn);
 ensure_seller_payment_columns($conn);
 ensure_seller_payment_columns($conn);
 $user = current_user($conn);
+require_marketplace_access($user);
 if ($user["role"] !== "buyer") {
     redirect_dashboard("seller");
 }
@@ -57,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["complete"])) {
         );
     }
     if ($message === "") {
-        header("Location: dashboard_buyer.php");
+        header("Location: " . app_page_url("dashboard_buyer.php"));
         exit;
     }
 }
@@ -110,7 +111,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["transaction_id"], $_P
     }
 }
 
-$fav = $conn->prepare("SELECT p.* FROM favorites f JOIN products p ON f.product_id = p.id WHERE f.user_id = ? ORDER BY f.created_at DESC");
+$fav = $conn->prepare("SELECT p.* FROM favorites f JOIN products p ON f.product_id = p.id JOIN users seller ON seller.id = p.seller_id WHERE f.user_id = ? AND p.is_blocked = 0 AND p.is_deleted = 0 AND seller.is_blocked = 0 ORDER BY f.created_at DESC");
 $fav->bind_param("i", $user["id"]);
 $fav->execute();
 $favorites = $fav->get_result();
@@ -152,7 +153,7 @@ foreach ($transactionRows as $transactionRow) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buyer Dashboard | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url("assets/css/app.css")) ?>">
 </head>
 <body class="bg-slate-50">
 <?php include "includes/navbar.php"; ?>

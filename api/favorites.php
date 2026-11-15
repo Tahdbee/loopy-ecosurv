@@ -2,6 +2,7 @@
 require_once "includes/config.php";
 require_login();
 $user = current_user($conn);
+require_marketplace_access($user);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["remove_favorite"])) {
     $productId = (int)($_POST["product_id"] ?? 0);
@@ -10,7 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["remove_favorite"])) {
         $remove->bind_param("ii", $user["id"], $productId);
         $remove->execute();
     }
-    header("Location: favorites.php");
+    header("Location: " . app_page_url("favorites.php"));
     exit;
 }
 
@@ -19,7 +20,7 @@ $stmt = $conn->prepare(
      FROM favorites f
      JOIN products p ON p.id = f.product_id
      JOIN users u ON u.id = p.seller_id
-     WHERE f.user_id = ?
+     WHERE f.user_id = ? AND p.is_blocked = 0 AND p.is_deleted = 0 AND u.is_blocked = 0
      ORDER BY f.created_at DESC"
 );
 $stmt->bind_param("i", $user["id"]);
@@ -33,7 +34,7 @@ $favorites = $stmt->get_result();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Favorites | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url("assets/css/app.css")) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
     <?php include "includes/navbar.php"; ?>

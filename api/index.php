@@ -2,11 +2,12 @@
 require_once "includes/config.php";
 require_login();
 $user = current_user($conn);
+require_marketplace_access($user);
 $categories = ["Books", "Electronics", "Dorm Items", "Fashion", "Study Supplies", "Other"];
 $search = trim($_GET["q"] ?? "");
 $category = trim($_GET["category"] ?? "");
 
-$sql = "SELECT p.*, u.full_name seller_name, u.faculty, u.major FROM products p JOIN users u ON p.seller_id = u.id WHERE p.is_sold = 0";
+$sql = "SELECT p.*, u.full_name seller_name, u.faculty, u.major FROM products p JOIN users u ON p.seller_id = u.id WHERE p.is_sold = 0 AND p.is_blocked = 0 AND p.is_deleted = 0 AND u.is_blocked = 0";
 $params = [];
 $types = "";
 if ($search !== "") {
@@ -36,7 +37,7 @@ $products = $stmt->get_result();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marketplace | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url("assets/css/app.css")) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>
@@ -105,7 +106,7 @@ $products = $stmt->get_result();
                 <a href="index.php#marketplace">See all items</a>
             </div>
         <?php else: ?>
-            <div class="landing-product-grid">
+            <div id="landingProductGrid" class="landing-product-grid">
                 <?php $productIndex = 0; ?>
                 <?php while ($row = $products->fetch_assoc()): ?>
                     <article class="product-card landing-product-card scroll-reveal" style="--reveal-delay: <?= ($productIndex % 4) * 70 ?>ms">
@@ -128,15 +129,32 @@ $products = $stmt->get_result();
                     <?php $productIndex++; ?>
                 <?php endwhile; ?>
             </div>
+            <div class="landing-load-more-wrap">
+                <button type="button" class="landing-load-more" aria-controls="landingProductGrid" hidden>
+                    Load more products <span aria-hidden="true">↓</span>
+                </button>
+            </div>
         <?php endif; ?>
     </section>
 </main>
 <script>
 document.documentElement.classList.add("has-scroll-reveal");
 
-const revealTargets = document.querySelectorAll(".scroll-reveal");
+const productGrid = document.getElementById("landingProductGrid");
+const productCards = productGrid ? Array.from(productGrid.querySelectorAll(".landing-product-card")) : [];
+const loadMoreButton = document.querySelector(".landing-load-more");
+const productColumns = productGrid
+    ? getComputedStyle(productGrid).gridTemplateColumns.split(/\s+/).filter(Boolean).length
+    : 1;
+const productsPerLoad = Math.max(1, productColumns * 2);
+let visibleProductCount = productsPerLoad;
+
+productCards.slice(visibleProductCount).forEach((card) => card.classList.add("is-load-more-hidden"));
+
+const revealTargets = document.querySelectorAll(".scroll-reveal:not(.is-load-more-hidden)");
+let revealObserver = null;
 if ("IntersectionObserver" in window) {
-    const revealObserver = new IntersectionObserver((entries, observer) => {
+    revealObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach((entry) => {
             if (entry.isIntersecting) {
                 entry.target.classList.add("is-visible");
@@ -147,6 +165,23 @@ if ("IntersectionObserver" in window) {
     revealTargets.forEach((target) => revealObserver.observe(target));
 } else {
     revealTargets.forEach((target) => target.classList.add("is-visible"));
+}
+
+if (loadMoreButton && productCards.length > visibleProductCount) {
+    loadMoreButton.hidden = false;
+    loadMoreButton.addEventListener("click", () => {
+        const nextVisibleCount = visibleProductCount + productsPerLoad;
+        productCards.slice(visibleProductCount, nextVisibleCount).forEach((card) => {
+            card.classList.remove("is-load-more-hidden");
+            if (revealObserver) {
+                revealObserver.observe(card);
+            } else {
+                card.classList.add("is-visible");
+            }
+        });
+        visibleProductCount = nextVisibleCount;
+        loadMoreButton.hidden = visibleProductCount >= productCards.length;
+    });
 }
 
 document.querySelectorAll(".landing-view-product").forEach((link) => {

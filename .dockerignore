@@ -5,3 +5,5 @@
 !.env.example
 README.md
 SECURITY-REVIEW.md
+vendor/
+private_uploads/

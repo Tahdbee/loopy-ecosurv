@@ -2,6 +2,7 @@
 require_once "includes/config.php";
 require_login();
 $user = current_user($conn);
+require_marketplace_access($user);
 $message = "";
 $error = "";
 
@@ -94,7 +95,7 @@ $reviewStats = $avg->get_result()->fetch_assoc();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile &amp; Settings | LOOPLY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= e(asset_url("assets/css/app.css")) ?>">
 </head>
 <body class="bg-slate-50 min-h-screen">
 <?php include "includes/navbar.php"; ?>
